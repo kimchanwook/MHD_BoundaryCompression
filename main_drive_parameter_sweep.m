@@ -1,0 +1,6 @@
+function main_drive_parameter_sweep()
+%MAIN_DRIVE_PARAMETER_SWEEP Placeholder for future parameter sweeps.
+    error(['main_drive_parameter_sweep is not implemented yet. ', ...
+           'The immediate next step is to finish the forward MHD update ', ...
+           'for the baseline symmetric compression case.']);
+end
