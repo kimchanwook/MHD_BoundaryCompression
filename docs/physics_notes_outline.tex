@@ -3,30 +3,34 @@
 \lhead{MHD\_BoundaryCompression}
 \rhead{Physics Notes Outline}
 \begin{document}
-\DocTitle{Physics Notes Outline}{Planned textbook-style note set for the boundary-compression project}{Purpose: define the first family of physics notes that should explain the governing equations, drive physics, compression metrics, and baseline case in a physics-first format with explicit notation.}
+
+\DocTitle{Physics Notes Outline}{Interview-ready physics note set for the boundary-compression project}{Purpose: define a compact textbook-style note family that explains the governing equations, compression physics, drive families, magnetic-flux amplification, diagnostic metrics, and baseline reference case in a physics-first format.}
+
 \begin{overviewbox}
-\textbf{Document purpose.} Purpose: define the first family of physics notes that should explain the governing equations, drive physics, compression metrics, and baseline case in a physics-first format with explicit notation.
+\textbf{Document purpose.} This outline is no longer only a placeholder list. It is the narrative plan for the note set that can feed an interview slide deck directly. The intended progression is: governing equations $\rightarrow$ compression physics $\rightarrow$ drive taxonomy $\rightarrow$ magnetic-field amplification $\rightarrow$ quantitative metrics $\rightarrow$ baseline case.
 \end{overviewbox}
+
 \section{Symbol and acronym table}
 \begin{symtable}
 MHD & magnetohydrodynamics & Fluid model that couples plasma motion to magnetic-field evolution. \\
 EOS & equation of state & Closure relation connecting pressure, energy, and density. \\
-$ho$ & mass density & Primary compression variable for the plasma fluid. \\
+$\rho$ & mass density & Primary compression variable for the plasma fluid. \\
 $p$ & thermal pressure & Scalar gas pressure that rises during compressive heating. \\
 $\mathbf{v}$ & fluid velocity & Bulk flow field produced by the inward drive and later stagnation. \\
 $\mathbf{B}$ & magnetic field & Field whose amplification and uniformity are part of the scientific objective. \\
-$v_A$ & Alfv'en speed & Characteristic MHD wave speed associated with magnetic tension. \\
+$\Phi_B$ & magnetic flux & Magnetic flux through a chosen surface or flux tube cross section. \\
+$v_A$ & Alfv\'en speed & Characteristic MHD wave speed associated with magnetic tension. \\
 $c_f$ & fast magnetosonic speed & Relevant signal speed for compressive disturbances. \\
 $v_n$ & normal boundary velocity & Imposed inward speed in the first drive model. \\
 $J$ & objective function & Composite scalar used to rank compression quality. \\
 \end{symtable}
 
 \section{Purpose of the physics-note set}
-This outline defines the first document family that should eventually carry the physics explanation for the repository. These notes are not intended to be short implementation memos. They should behave more like compact textbook chapters: each should define its notation, explain the physical picture, derive the needed formulas, and clarify why the corresponding code module exists.
+This note family is meant to function as part of the scientific project itself, not as optional packaging. Each module should behave like a short textbook chapter: define notation, explain the physical picture, state the core equations, and connect the physics to the code architecture and diagnostics.
 
 \section{Module 1: ideal-MHD compression problem}
 \subsection{Scientific purpose}
-This note should define the governing equations and explain what boundary-driven compression means when the computational grid itself is fixed. It should answer the basic question: how can a plasma become compressed on a fixed Eulerian mesh if the boundary does not physically move?
+Define the governing equations and explain what boundary-driven compression means when the computational grid itself is fixed. This note answers the basic question: how can a plasma become compressed on a fixed Eulerian mesh if the boundary does not literally move the grid points?
 
 \subsection{Topics that belong in this note}
 \begin{itemize}[leftmargin=1.8em]
@@ -41,20 +45,21 @@ This note should define the governing equations and explain what boundary-driven
 
 \section{Module 2: boundary-driven compression physics}
 \subsection{Scientific purpose}
-This note should explain the physical sequence launched by an inward boundary drive. The explanation should distinguish between weak compressive waves and strong shocks, and should show how inward-propagating fronts interact when launched from multiple sides.
+Explain the dynamical sequence launched by an inward boundary drive. The note should distinguish between smooth compressive waves and stronger shock-like fronts, and it should show how inward-propagating fronts interact when launched from multiple sides.
 
 \subsection{Topics that belong in this note}
 \begin{itemize}[leftmargin=1.8em]
     \item inward forcing picture,
-    \item wave-launch and shock-formation logic,
-    \item role of signal speeds in setting how the drive couples to the interior,
+    \item finite-speed communication through the plasma,
+    \item weak-wave versus strong-front logic,
+    \item role of signal speeds in setting interior response,
     \item central stagnation and compressed-core formation,
     \item how asymmetry in timing or strength creates nonuniform compression.
 \end{itemize}
 
 \section{Module 3: boundary-drive models}
 \subsection{Scientific purpose}
-This note should define the idea of a drive family and explain why an abstraction layer is needed. The reader should come away understanding the difference between a physical drive prescription and a numerical boundary implementation.
+Define the idea of a drive family and explain why an abstraction layer is needed. The reader should come away understanding the difference between a physical drive prescription and a numerical boundary implementation.
 
 \subsection{Topics that belong in this note}
 \begin{itemize}[leftmargin=1.8em]
@@ -67,12 +72,12 @@ This note should define the idea of a drive family and explain why an abstractio
 
 \section{Module 4: uniformity metrics and objective functions}
 \subsection{Scientific purpose}
-This note should define what ``uniform compression'' means mathematically and physically. A key job of the document is to explain why high compression alone is not enough.
+Define what ``uniform compression'' means mathematically and physically. A key job of the document is to explain why large compression alone is not enough.
 
 \subsection{Topics that belong in this note}
 \begin{itemize}[leftmargin=1.8em]
     \item core-region averaging,
-    \item density, pressure, and magnetic compression ratios,
+    \item density, pressure, magnetic, and total-pressure compression ratios,
     \item coefficient-of-variation style nonuniformity metrics,
     \item symmetry penalties,
     \item residual core-speed and stagnation metrics,
@@ -82,7 +87,7 @@ This note should define what ``uniform compression'' means mathematically and ph
 
 \section{Module 5: baseline case definition}
 \subsection{Scientific purpose}
-This note should document the first reference problem in full detail. It should be possible for a reader to understand the baseline setup and expected qualitative evolution without reading the MATLAB code.
+Document the first reference problem in full detail. It should be possible for a reader to understand the baseline setup and expected qualitative evolution without reading the MATLAB code.
 
 \subsection{Topics that belong in this note}
 \begin{itemize}[leftmargin=1.8em]
@@ -95,18 +100,32 @@ This note should document the first reference problem in full detail. It should 
     \item expected compression history and first diagnostic plots to inspect.
 \end{itemize}
 
+\section{Module 6: flux compression and field amplification}
+\subsection{Scientific purpose}
+Provide a dedicated explanation of why inward plasma compression can amplify the magnetic field in ideal MHD. This note should be especially useful for interview presentation because it links the boundary drive directly to the magnetic objective of the project.
+
+\subsection{Topics that belong in this note}
+\begin{itemize}[leftmargin=1.8em]
+    \item magnetic-flux intuition,
+    \item simple flux-tube scaling argument,
+    \item perpendicular versus parallel compression,
+    \item relation to magnetic pressure and magnetic tension,
+    \item limits of the frozen-in picture,
+    \item connection back to the repository diagnostics.
+\end{itemize}
+
 \section{Suggested derivation notes}
-The repository should later contain a derivation subcollection including:
+The repository can later contain a derivation subcollection including:
 \begin{itemize}[leftmargin=1.8em]
     \item \texttt{conservative\_ideal\_mhd\_equations.tex},
     \item \texttt{boundary\_velocity\_prescription.tex},
     \item \texttt{compression\_ratio\_metrics.tex},
     \item \texttt{magnetic\_flux\_compression\_measures.tex}.
 \end{itemize}
-These documents should go beyond implementation and explain the actual derivation logic step by step.
+These documents would go beyond implementation and walk through the derivation logic step by step.
 
 \section{Suggested implementation notes}
-The implementation-note set should complement, not replace, the physics notes. The most useful early implementation documents are:
+The implementation-note set should complement, not replace, the physics notes. The most useful early implementation documents remain:
 \begin{itemize}[leftmargin=1.8em]
     \item run order and workflow,
     \item boundary-drive interface,
@@ -115,6 +134,6 @@ The implementation-note set should complement, not replace, the physics notes. T
 \end{itemize}
 
 \section{Concluding interpretation}
-The physics-note set should be treated as part of the project itself rather than as optional documentation. In a repository like this one, the scientific value depends directly on whether the governing physics, drive abstractions, and diagnostic definitions are explicit enough that a reader can understand the logic without reverse-engineering the code.
+The physics-note set should be treated as an interview-facing scientific asset. In a repository like this one, the value of the project depends not only on the solver but also on whether the governing physics, drive abstractions, and diagnostic definitions are explicit enough that a reader can understand the logic without reverse-engineering the MATLAB code.
 
 \end{document}
