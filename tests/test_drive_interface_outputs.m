@@ -1,0 +1,3 @@
+function test_drive_interface_outputs()
+repoRoot = fileparts(fileparts(mfilename('fullpath'))); addpath(genpath(repoRoot)); grid = build_grid(default_grid_params()); physics = default_physics_params(); drive = struct('type','prescribed_velocity','parameters', case_baseline_symmetric().drive.parameters); driveModel = build_drive_model(drive, grid, physics); interior = struct('rho',1,'vx',0,'vy',0,'vz',0,'Bx',1,'By',0,'Bz',0,'p',1,'E',2); out = evaluate_drive(driveModel, 'left', linspace(0,1,4), 0.05, interior); assert(isfield(out,'vn')); assert(isfield(out,'mode')); disp('test_drive_interface_outputs passed');
+end
