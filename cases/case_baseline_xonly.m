@@ -1,7 +1,5 @@
-function caseData = case_baseline_xonly()
-%CASE_BASELINE_XONLY Template case for left-right compression only.
-    caseData = case_baseline_symmetric();
-    caseData.name = 'baseline_xonly';
-    caseData.description = 'Left-right inward compression only.';
-    caseData.drive.boundaries = {'left','right'};
+function caseConfig = case_baseline_xonly()
+caseConfig = case_baseline_symmetric();
+caseConfig.runName = 'baseline_xonly';
+caseConfig.drive.parameters.boundaries = {'left','right'};
 end

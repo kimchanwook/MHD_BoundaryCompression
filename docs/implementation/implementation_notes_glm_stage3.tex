@@ -1,0 +1,47 @@
+\documentclass[11pt]{article}
+\input{shared/project_style.tex}
+\lhead{MHD\_BoundaryCompression}
+\rhead{Stage 3 Notes}
+\begin{document}
+\DocTitle{Implementation Notes -- Stage 3}{GLM divergence-cleaning upgrade}{Purpose: explain why the solver was extended with a generalized Lagrange multiplier divergence-cleaning field, how that changes the state vector, and what scientific improvement it provides over the earlier diffusive treatment.}
+\begin{overviewbox}
+\textbf{Document purpose.} Purpose: explain why the solver was extended with a generalized Lagrange multiplier divergence-cleaning field, how that changes the state vector, and what scientific improvement it provides over the earlier diffusive treatment.
+\end{overviewbox}
+\section{Symbol and acronym table}
+\begin{symtable}
+GLM & generalized Lagrange multiplier & Method that augments the MHD system with an auxiliary scalar field to transport and damp divergence error. \\
+$\psi$ & GLM cleaning field & Auxiliary scalar coupled to the magnetic field for divergence control. \\
+$c_h$ & GLM hyperbolic cleaning speed & Speed at which divergence error is transported away. \\
+$\mathbf{U}$ & conserved state vector & Now includes the additional cleaning field $\psi$. \\
+$
+abla\cdot\mathbf{B}$ & magnetic divergence & Quantity whose control motivates the GLM upgrade. \\
+RMS & root-mean-square & Used in run histories for divergence and cleaning-field summaries. \\
+CT & constrained transport & More rigorous divergence-preserving approach not yet implemented here. \\
+\end{symtable}
+
+\section{Why Stage 3 was needed}
+Once the forward solver existed and reconstruction had been improved, the next major numerical concern was magnetic-divergence control. A simple diffusive correction can reduce divergence error, but it does not represent a clear physical or mathematical transport mechanism for that error. Stage 3 therefore moves to a cleaner research-code approach by introducing a GLM-style divergence-cleaning field.
+
+\section{What changed in the state}
+The conserved state is expanded from eight variables to nine by adding the scalar field $\psi$. This field is not a physical thermodynamic variable of the plasma. Instead, it is an auxiliary numerical field whose purpose is to couple to the magnetic evolution so that divergence error can be propagated and damped rather than merely blurred.
+
+\section{Why GLM is an improvement}
+The benefit of GLM over the earlier diffusive correction is conceptual as well as practical. With GLM, divergence error is no longer treated as something that is only locally smeared. It is given its own transport-and-damping pathway. That makes the solver easier to defend scientifically, especially when the boundary forcing produces sharp compressive structures.
+
+\section{What was added around the solver}
+Stage 3 updates several surrounding layers:
+\begin{itemize}[leftmargin=1.8em]
+    \item reconstruction now includes $\psi$,
+    \item the CFL estimate accounts for the GLM cleaning speed,
+    \item run histories record $\psi_{\max}$ and $\psi_{\mathrm{RMS}}$,
+    \item divergence-cleaning logic is now selectable through a modular cleaning routine.
+\end{itemize}
+This matters because divergence control should be treated as part of the solver design, not as an invisible patch.
+
+\section{Remaining limits}
+This is still not constrained transport. The magnetic boundary treatment also remains fairly simple. Stage 3 should therefore be interpreted as a strong intermediate step: clearly better than a purely diffusive correction, but not the final word in divergence control.
+
+\section{Scientific meaning for the project}
+For a boundary-compression problem, strong inward forcing can generate sharp structures and make magnetic divergence errors more visible. The GLM upgrade therefore increases the credibility of the compression diagnostics and makes later curated studies more defensible.
+
+\end{document}

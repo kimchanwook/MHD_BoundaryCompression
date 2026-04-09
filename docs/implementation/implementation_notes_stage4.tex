@@ -1,0 +1,44 @@
+\documentclass[11pt]{article}
+\input{shared/project_style.tex}
+\lhead{MHD\_BoundaryCompression}
+\rhead{Stage 4 Notes}
+\begin{document}
+\DocTitle{Implementation Notes -- Stage 4}{Baseline-study workflow and sweep infrastructure}{Purpose: explain how the project moved from one-off solver runs to a repeatable study workflow with parameter sweeps, ranked outputs, and reusable comparison plots.}
+\begin{overviewbox}
+\textbf{Document purpose.} Purpose: explain how the project moved from one-off solver runs to a repeatable study workflow with parameter sweeps, ranked outputs, and reusable comparison plots.
+\end{overviewbox}
+\section{Symbol and acronym table}
+\begin{symtable}
+CSV & comma-separated values & Used for exported summary tables. \\
+MAT & MATLAB binary file & Used for structured run and sweep outputs. \\
+$J$ & objective function & Scalar measure used to rank run quality. \\
+peak objective & best-time score & Maximum objective reached during the run. \\
+final objective & end-of-run score & Objective evaluated at the final saved time. \\
+sweep & parameter study & Repeated runs over a chosen set of drive parameters. \\
+\end{symtable}
+
+\section{Purpose of Stage 4}
+Stage 4 changes the repository from a solver-only code into a study workflow. A single run can show whether the code is functioning, but it cannot answer the scientific question of which drive shape is better. The project therefore needs a repeatable way to run families of cases, collect scalar measures, rank them, and write comparison plots.
+
+\section{Main workflow additions}
+The stage introduces:
+\begin{itemize}[leftmargin=1.8em]
+    \item a baseline study suite entry point,
+    \item upgraded parameter-sweep logic,
+    \item comparison scripts across runs,
+    \item postprocessing and ranking utilities,
+    \item MAT and CSV summary export,
+    \item multi-run comparison figures.
+\end{itemize}
+Together, these changes make the repository usable for actual compression studies rather than isolated numerical checks.
+
+\section{Ranking philosophy}
+Runs are ranked by peak objective first and by final objective second. That choice is deliberate. Inward compression problems can pass through a highly uniform compressed state before later distortions or re-expansion degrade the final state. The ranking therefore needs to capture the best physically useful state encountered during the run, not only the final snapshot.
+
+\section{Why this stage matters scientifically}
+The repository's core question concerns comparative compression quality. Stage 4 is the first point at which that question can be asked systematically, because the code can now run multiple driven cases under a common diagnostic and export framework.
+
+\section{Important caution}
+Stage 4 improves workflow, not necessarily fundamental numerics. The interpretation of ranked runs should still be cautious because the objective weights remained provisional at this point, and the solver still had known limitations. That is why the next stage focused on strengthening the physics meaning of the diagnostics themselves.
+
+\end{document}

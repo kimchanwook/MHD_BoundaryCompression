@@ -1,9 +1,8 @@
-function caseData = case_pulse_train_template()
-%CASE_PULSE_TRAIN_TEMPLATE Template for future repeated-drive studies.
-    caseData = case_baseline_symmetric();
-    caseData.name = 'template_pulse_train';
-    caseData.drive.temporal_profile = 'pulse_train';
-    caseData.drive.temporal_parameters.period = 0.20;
-    caseData.drive.temporal_parameters.pulse_width = 0.05;
-    caseData.drive.temporal_parameters.nPulses = 4;
+function caseConfig = case_pulse_train_template()
+caseConfig = case_baseline_symmetric();
+caseConfig.runName = 'template_pulse_train';
+caseConfig.drive.parameters.temporal_profile = 'pulse_train';
+caseConfig.drive.parameters.pulse_count = 3;
+caseConfig.drive.parameters.pulse_period = 0.08;
+caseConfig.drive.parameters.pulse_width  = 0.03;
 end

@@ -1,0 +1,58 @@
+\documentclass[11pt]{article}
+\input{shared/project_style.tex}
+\lhead{MHD\_BoundaryCompression}
+\rhead{Stage 1 Notes}
+\begin{document}
+\DocTitle{Implementation Notes -- Stage 1}{First real forward-solver layer}{Purpose: document the first stage at which the repository stopped being a placeholder architecture and became a runnable forward ideal-MHD compression code with a real conserved-state update.}
+\begin{overviewbox}
+\textbf{Document purpose.} Purpose: document the first stage at which the repository stopped being a placeholder architecture and became a runnable forward ideal-MHD compression code with a real conserved-state update.
+\end{overviewbox}
+\section{Symbol and acronym table}
+\begin{symtable}
+MHD & magnetohydrodynamics & Governing model evolved by the stage-1 solver. \\
+RK2 & second-order Runge--Kutta & Two-stage explicit update used in time. \\
+HLL & Harten--Lax--van Leer & Approximate Riemann solver used for interface fluxes. \\
+$\mathbf{U}$ & conserved state vector & Stage-1 state containing density, momentum, magnetic field, and total energy. \\
+$\Delta t$ & time step & Explicit update increment limited by the CFL condition. \\
+$
+abla\cdot\mathbf{B}$ & magnetic divergence & Diagnostic quantity that should remain small. \\
+ghost cells & boundary extension cells & Extra cells used to impose boundary conditions. \\
+CFL & Courant--Friedrichs--Lewy & Stability restriction for explicit time stepping. \\
+\end{symtable}
+
+\section{Purpose of Stage 1}
+Stage 1 is the first point at which the project becomes an actual forward solver rather than a structural shell. Before this stage, the repository primarily established architecture: the case layer, drive-model interface, diagnostics hooks, and top-level workflow. Stage 1 adds the minimum numerical machinery required to evolve a conservative ideal-MHD state in time.
+
+\section{Main numerical additions}
+The stage-1 solver introduces the following core pieces:
+\begin{enumerate}[leftmargin=1.8em]
+    \item a conservative eight-variable ideal-MHD state,
+    \item physical flux functions in the $x$ and $y$ directions,
+    \item an HLL approximate Riemann solver,
+    \item explicit RK2 time stepping,
+    \item ghost-cell boundary treatment for the prescribed inward-velocity drive,
+    \item baseline history tracking and scalar objective hooks.
+\end{enumerate}
+This is the first stage where the code can carry an initial state forward in time using physically meaningful fluxes rather than placeholders.
+
+\section{Why first-order structure was acceptable here}
+The stage-1 update is intentionally conservative in ambition. Reconstruction remains effectively first order, the boundary magnetic treatment is simple, and there is no full constrained transport or GLM state yet. That is acceptable at this stage because the scientific goal is to make the forward model real without yet introducing too many moving numerical parts at once.
+
+\section{Boundary treatment logic}
+The first drive family prescribes inward normal velocity at the domain edges. The boundary layer therefore needs to convert a physical drive prescription into ghost-cell values that are consistent with the finite-volume update. This is handled through the boundary and drive-model layers rather than being hard-coded inside the solver loop.
+
+\section{Scientific interpretation of Stage 1}
+Stage 1 should be viewed as the first defensible forward baseline, not as a finished production MHD code. Its value is that the repository now contains a true evolving state, real fluxes, real time stepping, and a run path that exercises the boundary-compression workflow from case definition to diagnostics.
+
+\section{Immediate limitations}
+The important limits of Stage 1 are:
+\begin{itemize}[leftmargin=1.8em]
+    \item first-order reconstruction,
+    \item no constrained transport,
+    \item no explicit GLM cleaning field,
+    \item simple magnetic boundary treatment,
+    \item cautious use only for early baseline studies.
+\end{itemize}
+These limitations are exactly why the next numerical upgrade was directed toward better reconstruction and divergence control.
+
+\end{document}

@@ -1,0 +1,47 @@
+\documentclass[11pt]{article}
+\input{shared/project_style.tex}
+\lhead{MHD\_BoundaryCompression}
+\rhead{Stage 5 Notes}
+\begin{document}
+\DocTitle{Implementation Notes -- Stage 5}{Diagnostics and objective-function upgrade}{Purpose: explain how the project tightened the scientific meaning of compression quality by refining the core-region definition, separating reward and penalty terms, and making symmetry and stagnation explicit in the objective.}
+\begin{overviewbox}
+\textbf{Document purpose.} Purpose: explain how the project tightened the scientific meaning of compression quality by refining the core-region definition, separating reward and penalty terms, and making symmetry and stagnation explicit in the objective.
+\end{overviewbox}
+\section{Symbol and acronym table}
+\begin{symtable}
+$J$ & objective function & Composite scalar assembled from compression rewards and penalty terms. \\
+$ho$ & mass density & Primary fluid-compression variable. \\
+$p$ & thermal pressure & Compression variable sensitive to thermodynamic strengthening. \\
+$|\mathbf{B}|$ & magnetic-field magnitude & Primary magnetic compression variable. \\
+core region & central diagnostic subset & Interior region used for fair compression and uniformity evaluation. \\
+stagnation & near-zero residual core flow & Desired feature of a settled compressed state. \\
+symmetry penalty & reflection-mismatch measure & Penalty associated with loss of left-right, top-bottom, or diagonal symmetry. \\
+\end{symtable}
+
+\section{Why Stage 5 was needed}
+Once the repository could run curated comparisons, the next weakness became clear: the objective function was not yet physically sharp enough. A strong compression study should separate the reward for achieving compression from the penalties associated with making that compressed state uneven, asymmetric, or dynamically unsettled.
+
+\section{Core-region definition}
+A major change in Stage 5 is that the primary compression metrics are evaluated over a configurable central core rather than over the full domain interior. This matters because incoming boundary layers and active compression fronts can dominate whole-domain averages even when the central compressed state is the real scientific target.
+
+\section{Objective-function structure}
+The upgraded scalar objective is organized conceptually as
+\[
+J = \text{compression reward} - \text{uniformity penalty} - \text{symmetry penalty} - \text{stagnation penalty} - \text{divergence penalty}.
+\]
+The value of this structure is interpretability. It becomes much easier to explain why one run outranks another when the reasons are decomposed into physically meaningful parts.
+
+\section{Explicit diagnostics introduced here}
+Stage 5 makes the following categories explicit:
+\begin{itemize}[leftmargin=1.8em]
+    \item density, pressure, and magnetic compression ratios,
+    \item density, pressure, and magnetic nonuniformity,
+    \item left--right, top--bottom, and diagonal symmetry penalties,
+    \item normalized core-speed stagnation metric,
+    \item final, peak, and time-averaged objective summaries.
+\end{itemize}
+
+\section{Scientific interpretation}
+A good run now means more than ``high density.'' It means high compression achieved in a way that remains spatially even, geometrically symmetric when expected, and dynamically close to stagnation in the core. This makes later comparisons much more defensible and much less dependent on arbitrary scalar choices.
+
+\end{document}

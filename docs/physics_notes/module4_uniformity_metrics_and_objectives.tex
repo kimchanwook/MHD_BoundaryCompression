@@ -1,0 +1,141 @@
+\documentclass[11pt]{article}
+\input{../shared/project_style.tex}
+\begin{document}
+
+\docheader{Module 4: Uniformity Metrics and Objective Functions}{How to decide whether one compression drive is better than another}{Purpose: define quantitative measures of compression strength, spatial uniformity, symmetry, and core stagnation for fair comparison of candidate drive configurations.}
+
+\begin{overviewbox}
+\textbf{What this note does.} This note defines the diagnostic logic of the project. A good compression result is not only one that reaches a large peak density. It should also amplify the magnetic field, remain spatially uniform in the core, preserve symmetry when intended, and avoid large residual core motion.
+\end{overviewbox}
+
+\symboltableheader
+$\langle q \rangle_{\text{core}}$ & core average of $q$ & Spatial average of quantity $q$ over the designated core region.\\
+$\Omega_{\text{core}}$ & core region & Interior subregion used to evaluate compression quality.\\
+$C_{\rho}$ & density compression ratio & Ratio of current to initial core-averaged density.\\
+$C_p$ & pressure compression ratio & Ratio of current to initial core-averaged pressure.\\
+$C_B$ & magnetic compression ratio & Ratio of current to initial core-averaged magnetic-field magnitude.\\
+$U_q$ & uniformity metric & Normalized standard deviation of quantity $q$ over the core.\\
+$S_q$ & symmetry metric & Mismatch between a field and its reflected counterpart.\\
+$U_v$ & stagnation metric & Core-averaged speed measuring residual core motion.\\
+$J$ & composite objective & Scalar score combining rewards and penalties.\\
+\symboltableend
+
+\section{Why compression strength alone is not enough}
+Suppose one drive produces a very large peak density at a single hot spot, while another produces a slightly smaller density increase spread smoothly throughout the core. Which one is better? For this project, the second case is often more valuable because the scientific target is \emph{uniform compression}. Therefore the diagnostics must separate:
+\begin{itemize}
+    \item how strongly the plasma was compressed, and
+    \item how evenly that compression was distributed.
+\end{itemize}
+
+A scientifically useful objective should therefore reward compression and penalize nonuniformity.
+
+\section{Definition of the core region}
+The core region $\Omega_{\text{core}}$ is a designated interior subset of the computational domain. It is chosen to focus attention on the compressed interior rather than on the boundary layers or corner artifacts.
+
+The exact definition can be geometric, such as the central fraction of the domain width and height. What matters is consistency: all candidate drives should be evaluated over the same core-region definition unless there is a compelling reason to change it.
+
+\section{Compression ratios}
+\subsection{Density compression ratio}
+A natural density measure is
+\[
+C_{\rho}(t) = \frac{\langle \rho(t)\rangle_{\text{core}}}{\langle \rho(0)\rangle_{\text{core}}}.
+\]
+If $C_{\rho}>1$, the core has become denser than its initial state.
+
+\subsection{Pressure compression ratio}
+Likewise,
+\[
+C_p(t) = \frac{\langle p(t)\rangle_{\text{core}}}{\langle p(0)\rangle_{\text{core}}}.
+\]
+This indicates how strongly the thermal pressure has risen.
+
+\subsection{Magnetic compression ratio}
+For the magnetic field one may use either field magnitude or magnetic pressure. A simple first definition is
+\[
+C_B(t) = \frac{\langle |\mathbf{B}(t)|\rangle_{\text{core}}}{\langle |\mathbf{B}(0)|\rangle_{\text{core}}}.
+\]
+An alternative is to use $|\mathbf{B}|^2$, which is directly proportional to magnetic pressure.
+
+\section{Uniformity metrics}
+For any field $q$, define the normalized spatial variation over the core by
+\[
+U_q(t) = \frac{\sqrt{\left\langle\left(q-\langle q\rangle_{\text{core}}\right)^2\right\rangle_{\text{core}}}}{\langle q\rangle_{\text{core}}}.
+\]
+This is essentially a coefficient of variation. Smaller values mean more uniform compression.
+
+In this project, the most important choices are:
+\begin{itemize}
+    \item $U_{\rho}(t)$ for density uniformity,
+    \item $U_{p}(t)$ for pressure uniformity,
+    \item $U_{B}(t)$ for magnetic-field uniformity.
+\end{itemize}
+
+\begin{physicsbox}
+\textbf{Interpretation.} Compression quality is high when the compression ratios are large \emph{and} the corresponding uniformity measures are small. A large compression ratio with a large uniformity penalty means the core compressed unevenly.
+\end{physicsbox}
+
+\section{Symmetry metrics}
+When the applied drive is designed to be symmetric, the interior solution should reflect that symmetry. One can therefore define reflection-based mismatch measures. For example, left-right density symmetry might be measured schematically as
+\[
+S_{\rho}^{(x)}(t) = \frac{\norm{\rho(x,y,t)-\rho(L_x-x,y,t)}}{\norm{\rho(x,y,t)}}.
+\]
+Similar measures can be defined for top-bottom symmetry and for other variables such as $|\mathbf{B}|$ or pressure.
+
+These are especially important for the baseline symmetric case because they reveal whether asymmetry is coming from the physics, the drive, or the numerics.
+
+\section{Residual velocity and stagnation quality}
+A compressed core with large leftover flow is not truly settled. The project therefore includes a stagnation measure based on the core-averaged speed:
+\[
+U_v(t) = \langle |\mathbf{v}(t)|\rangle_{\text{core}}.
+\]
+A smaller value indicates that the converging flow has slowed in the core and that the compressed region is closer to stagnation.
+
+This metric matters because two drive prescriptions can produce similar peak compression while leaving very different levels of post-collision sloshing.
+
+\section{Peak-time, final-time, and time-averaged scores}
+There is no single best time summary for every study. Three useful summaries are:
+\begin{enumerate}
+    \item \textbf{peak objective:} the best score reached at any time,
+    \item \textbf{final objective:} the score at the end of the run,
+    \item \textbf{time-averaged objective:} the average score over a selected time window.
+\end{enumerate}
+
+Each reveals something different. Peak score favors short-lived optimum compression events. Final score favors more persistent end states. Time average favors sustained good behavior.
+
+\section{Composite objective function}
+A useful first composite objective has the schematic form
+\[
+J = w_{\rho} C_{\rho}^{\ast} + w_p C_p^{\ast} + w_B C_B^{\ast}
+- w_{u\rho} U_{\rho} - w_{up} U_p - w_{uB} U_B - w_s S - w_v U_v - w_{\nabla\cdot B} D,
+\]
+where:
+\begin{itemize}
+    \item starred compression terms denote peak or chosen summary values,
+    \item uniformity terms penalize spatial variation,
+    \item $S$ denotes one or more symmetry penalties,
+    \item $U_v$ penalizes residual core flow,
+    \item $D$ penalizes poor magnetic-divergence control.
+\end{itemize}
+
+The exact weights are part of the scientific design choice. They should be chosen explicitly and reported, not hidden.
+
+\section{How to compare competing drive prescriptions fairly}
+To compare drive configurations honestly, the following should remain fixed unless the purpose of the study requires otherwise:
+\begin{itemize}
+    \item initial plasma state,
+    \item domain size and grid resolution,
+    \item core-region definition,
+    \item run duration,
+    \item objective weights.
+\end{itemize}
+
+Only then does it make sense to interpret differences in objective score as differences caused by the drive itself rather than by shifting analysis conventions.
+
+\begin{keybox}
+\textbf{Practical rule.} Compression metrics answer \emph{how much}. Uniformity and symmetry metrics answer \emph{how well}. The objective function is meaningful only if both categories are represented explicitly.
+\end{keybox}
+
+\section{Concluding summary}
+Uniform compression requires more than a large density spike. The project therefore measures density, pressure, and magnetic amplification together with spatial variation, symmetry preservation, and residual core motion. These diagnostics let the repository compare different drive designs in a way that is physically interpretable rather than visually impressionistic.
+
+\end{document}

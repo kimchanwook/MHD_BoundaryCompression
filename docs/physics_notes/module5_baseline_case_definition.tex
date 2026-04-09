@@ -1,0 +1,142 @@
+\documentclass[11pt]{article}
+\input{../shared/project_style.tex}
+\begin{document}
+
+\docheader{Module 5: Baseline Case Definition}{Reference problem for symmetric four-sided inward compression}{Purpose: document the first clean test problem used to exercise the full boundary-driven compression workflow before more complicated drive families are introduced.}
+
+\begin{overviewbox}
+\textbf{What this note does.} This note defines the baseline numerical experiment in full: geometry, initial state, drive, and expected diagnostics. Its role is similar to a benchmark case. Later drive variants should be compared back to this case.
+\end{overviewbox}
+
+\symboltableheader
+$L$ & side length & Domain size for the baseline square domain.\\
+$\rho_0$ & initial density & Uniform starting mass density.\\
+$p_0$ & initial pressure & Uniform starting thermal pressure.\\
+$\mathbf{B}_0$ & initial magnetic field & Uniform background magnetic field for the baseline case.\\
+$A$ & drive amplitude & Peak inward boundary-speed magnitude.\\
+$T_{\text{pulse}}$ & pulse duration & Total active duration of the baseline pulse.\\
+$f_t(t)$ & temporal pulse function & Smooth time envelope of the boundary drive.\\
+$f_s(s)$ & spatial profile & Baseline wall profile, chosen uniform in the first case.\\
+$c_{f0}$ & initial fast speed & Initial fast magnetosonic speed used to scale drive strength.\\
+\symboltableend
+
+\section{Purpose of the baseline case}
+The baseline case is not meant to be the most realistic or the strongest possible compression scenario. It is meant to be the cleanest first case that:
+\begin{itemize}
+    \item exercises the full solver and diagnostic pipeline,
+    \item is easy to interpret physically,
+    \item makes symmetry errors obvious,
+    \item provides a standard comparison point for later studies.
+\end{itemize}
+
+For that reason the baseline should be symmetric, smooth in time, and as simple as possible in initial conditions.
+
+\section{Domain geometry}
+The recommended baseline geometry is a square domain,
+\[
+\Omega = [0,L]\times[0,L].
+\]
+A square is preferred because it makes the four-sided symmetric drive concept natural and simplifies interpretation of left-right and top-bottom symmetry metrics.
+
+\section{Initial plasma state}
+The initial plasma is spatially uniform:
+\[
+\rho(x,y,0)=\rho_0, \qquad p(x,y,0)=p_0, \qquad \mathbf{v}(x,y,0)=\mathbf{0}.
+\]
+This removes unnecessary structure from the initial condition so that the later evolution can be attributed primarily to the imposed drive.
+
+\section{Initial magnetic field}
+The initial magnetic field is also chosen to be uniform,
+\[
+\mathbf{B}(x,y,0)=\mathbf{B}_0.
+\]
+A simple first choice is
+\[
+\mathbf{B}_0=(B_0,0,0).
+\]
+This choice is useful because it makes anisotropy from the magnetic field physically visible without adding geometric complexity from a nonuniform initial field.
+
+\section{Choice of adiabatic index}
+The baseline ideal-gas closure uses a constant adiabatic index $\gamma$. A standard first choice is
+\[
+\gamma = \frac{5}{3},
+\]
+which corresponds to a monatomic ideal gas. The exact value can later be changed if a different effective compressibility is desired, but the baseline should use one clear conventional choice and keep it fixed across the first comparisons.
+
+\section{Boundary sides and imposed inward velocity directions}
+The baseline drive acts on all four sides. The normal velocity should point inward on each wall:
+\begin{itemize}
+    \item left boundary: positive $v_x$,
+    \item right boundary: negative $v_x$,
+    \item bottom boundary: positive $v_y$,
+    \item top boundary: negative $v_y$.
+\end{itemize}
+
+The magnitudes are chosen equal for the symmetric baseline case.
+
+\section{Temporal pulse shape}
+The baseline pulse should turn on smoothly and turn off smoothly. A useful first choice is a sine-squared envelope:
+\[
+f_t(t)=
+\begin{cases}
+\sin^2\!\left(\pi t / T_{\text{pulse}}\right), & 0\le t\le T_{\text{pulse}},\\
+0, & \text{otherwise}.
+\end{cases}
+\]
+This avoids a discontinuous start, which would inject artificial sharp transients unrelated to the intended compression physics.
+
+\section{Spatial drive profile}
+For the first case, the spatial profile should be uniform along each wall:
+\[
+f_s(s)=1.
+\]
+That means every point along a given side receives the same nominal inward drive. More elaborate profiles such as cosine tapers or edge weighting should be studied only after the uniform case is understood.
+
+\section{Drive amplitude choice}
+The drive amplitude should be chosen as a modest fraction of the initial fast magnetosonic speed:
+\[
+A = \alpha c_{f0},
+\]
+with $\alpha$ in a subsonic-to-mildly-compressive range for the first run. The point of the baseline is to generate a clear compression experiment without immediately entering a numerically violent shock-dominated regime.
+
+\begin{physicsbox}
+\textbf{Interpretation.} The first baseline should be strong enough to produce visible inward compression, but weak enough that the results remain easy to interpret and the solver can be checked cleanly before more aggressive studies are attempted.
+\end{physicsbox}
+
+\section{Expected qualitative evolution}
+The expected sequence of events is:
+\begin{enumerate}
+    \item all four boundaries begin pushing inward smoothly,
+    \item inward-traveling compression fronts move toward the center,
+    \item density, pressure, and magnetic-field magnitude rise in the interior,
+    \item the fronts collide near the center,
+    \item a compressed core forms,
+    \item diagnostics determine whether the core is uniform, symmetric, and near stagnation.
+\end{enumerate}
+
+This sequence should be visible in snapshots, time histories, and summary metrics.
+
+\section{First diagnostics to plot}
+The minimum first-plot set should include:
+\begin{itemize}
+    \item two-dimensional density map,
+    \item two-dimensional magnetic-field-magnitude map,
+    \item time history of core density compression ratio,
+    \item time history of magnetic compression ratio,
+    \item time history of uniformity measures,
+    \item time history of symmetry and stagnation metrics.
+\end{itemize}
+
+Those plots together show both how much compression occurs and whether it is of good quality.
+
+\section{Why this is the correct first reference case}
+This baseline is the right first case because it combines simplicity with diagnostic power. It is simple because the initial condition is uniform and the drive is symmetric. It is diagnostically powerful because any asymmetry, corner artifact, or poor boundary handling becomes visible quickly. It therefore serves both as a physics reference and as a numerical debugging tool.
+
+\begin{keybox}
+\textbf{Practical role in the repository.} Every future drive family---shorter pulse, longer pulse, pulse train, spatial taper, timing perturbation, pressure loading, or moving wall---should first be interpreted relative to this baseline case.
+\end{keybox}
+
+\section{Concluding summary}
+The baseline case for \texttt{MHD\_BoundaryCompression} is a square-domain, uniform-state, four-sided symmetric inward-compression problem with a smooth prescribed boundary-velocity pulse. It is designed to be the cleanest reference problem for the project: physically interpretable, numerically revealing, and easy to compare against future drive variations.
+
+\end{document}

@@ -1,0 +1,173 @@
+\documentclass[11pt]{article}
+\input{../shared/project_style.tex}
+\begin{document}
+
+\docheader{Module 1: Ideal MHD Compression Problem}{Governing equations, variables, and physical meaning of boundary-driven compression}{Purpose: define the baseline ideal-magnetohydrodynamic model used in \texttt{MHD\_BoundaryCompression} and explain why density and magnetic field strength can both increase during inward compression.}
+
+\begin{overviewbox}
+\textbf{What this note does.} This note defines the conservative ideal magnetohydrodynamic (MHD) model, explains the meaning of a fixed Eulerian computational domain, and gives the physical interpretation of boundary-driven compression. The central point is that the code does not move the grid inward. Instead, it drives plasma inward through boundary conditions, and the interior state responds according to the coupled fluid--magnetic dynamics.
+\end{overviewbox}
+
+\symboltableheader
+MHD & magnetohydrodynamics & Continuum model of a conducting fluid or plasma coupled to a magnetic field.\\
+$\rho$ & mass density & Plasma mass per unit volume.\\
+$\mathbf{v}=(v_x,v_y,v_z)$ & fluid velocity & Bulk velocity of the plasma.\\
+$p$ & thermal pressure & Gas pressure associated with internal energy.\\
+$\mathbf{B}=(B_x,B_y,B_z)$ & magnetic field & Magnetic-flux-density vector.\\
+$E$ & total energy density & Sum of internal, kinetic, and magnetic energy densities.\\
+$\gamma$ & ratio of specific heats & Ideal-gas closure parameter.\\
+$\mu_0$ & vacuum permeability & Electromagnetic constant entering magnetic-pressure and magnetic-energy terms.\\
+$\Omega$ & computational domain & Two-dimensional rectangular region $[0,L_x]\times[0,L_y]$.\\
+$L_x,L_y$ & domain lengths & Physical size of the domain in the $x$ and $y$ directions.\\
+$\nabla\cdot\mathbf{B}$ & magnetic divergence & Quantity that should remain zero in physically consistent MHD.\\
+$p_B$ & magnetic pressure & Effective isotropic magnetic pressure $|\mathbf{B}|^2/(2\mu_0)$.\\
+$v_A$ & Alfv\'en speed & Characteristic magnetic-tension wave speed.\\
+\symboltableend
+
+\section{Physical statement of the problem}
+The project studies a magnetized plasma placed in a fixed rectangular domain,
+\[
+\Omega = [0,L_x]\times[0,L_y],
+\]
+with outer boundaries that can be driven inward by an externally prescribed compression drive. The baseline model treats the plasma as an \emph{ideal MHD fluid}. That means viscosity, resistivity, heat conduction, and radiation losses are neglected in the first forward model.
+
+The scientific question is not merely whether compression occurs. It is whether the chosen drive causes the interior plasma to become \emph{uniformly compressed} in both fluid and magnetic variables. Two features matter simultaneously:
+\begin{enumerate}
+    \item the plasma density and pressure should rise significantly, and
+    \item the magnetic field should also intensify in a spatially controlled and symmetric way.
+\end{enumerate}
+
+\begin{physicsbox}
+\textbf{Interpretation.} In this project, compression is driven from the outside inward. The boundaries act as the external actuator, while the interior plasma and magnetic field decide \emph{how} that forcing distributes itself through the domain.
+\end{physicsbox}
+
+\section{Why ideal MHD is the starting model}
+A plasma consists of charged particles. In the most detailed description one would track particle distribution functions in phase space. That is not the purpose here. The present project is aimed at field--fluid compression behavior on scales where a continuum description is appropriate. Ideal MHD is therefore the right first model because it captures the dominant coupling between:
+\begin{itemize}
+    \item fluid inertia,
+    \item gas pressure,
+    \item magnetic pressure, and
+    \item magnetic tension.
+\end{itemize}
+
+This model is especially natural for a first compression study because the questions of interest are global and structural: how waves are launched, where compression focuses, whether symmetry is preserved, and whether the compressed core becomes uniform or distorted.
+
+\section{State variables and conservative variables}
+The primitive variables are taken to be
+\[
+\rho,\qquad \mathbf{v},\qquad p,\qquad \mathbf{B}.
+\]
+The conservative finite-volume solver instead advances the conserved state
+\[
+\mathbf{U} = \begin{bmatrix}
+\rho \\
+\rho v_x \\
+\rho v_y \\
+\rho v_z \\
+E \\
+B_x \\
+B_y \\
+B_z
+\end{bmatrix}
+\]
+or, when the generalized Lagrange multiplier (GLM) cleaning field is used, an extended state that also includes the scalar cleaning variable $\psi$.
+
+The total energy density is
+\[
+E = \frac{p}{\gamma-1} + \frac{1}{2}\rho |\mathbf{v}|^2 + \frac{|\mathbf{B}|^2}{2\mu_0}.
+\]
+This is one of the central equations of the project. It says that the code evolves not only the fluid motion, but also the thermal and magnetic energy stored in the plasma state.
+
+\section{Ideal MHD equations in conservative form}
+In conservative form, the baseline equations are:
+
+\subsection{Mass conservation}
+\[
+\frac{\partial \rho}{\partial t} + \nabla\cdot(\rho\mathbf{v}) = 0.
+\]
+Mass cannot be created or destroyed by the ideal model. Density can rise during compression because mass is pushed into a smaller region.
+
+\subsection{Momentum conservation}
+\[
+\frac{\partial (\rho\mathbf{v})}{\partial t} + \nabla\cdot\left[\rho\mathbf{v}\mathbf{v} + \left(p + \frac{|\mathbf{B}|^2}{2\mu_0}\right)\mathbf{I} - \frac{\mathbf{B}\mathbf{B}}{\mu_0}\right] = 0.
+\]
+The momentum flux contains fluid advection, gas pressure, isotropic magnetic pressure, and anisotropic magnetic tension.
+
+\subsection{Total energy conservation}
+\[
+\frac{\partial E}{\partial t} + \nabla\cdot\left[\left(E+p+\frac{|\mathbf{B}|^2}{2\mu_0}\right)\mathbf{v} - \frac{(\mathbf{v}\cdot\mathbf{B})\mathbf{B}}{\mu_0}\right] = 0.
+\]
+This equation says that the evolving plasma redistributes thermal, kinetic, and magnetic energy together.
+
+\subsection{Magnetic induction}
+\[
+\frac{\partial \mathbf{B}}{\partial t} + \nabla\cdot(\mathbf{v}\mathbf{B}-\mathbf{B}\mathbf{v}) = 0.
+\]
+This induction equation governs how the magnetic field is advected and stretched by the fluid motion.
+
+\subsection{Divergence constraint}
+\[
+\nabla\cdot\mathbf{B} = 0.
+\]
+This is not a separately evolved conservation law but a consistency condition. Numerically, one must control its violation.
+
+\section{Equation of state and pressure recovery}
+To close the system, the project uses the ideal-gas relation written in conservative variables:
+\[
+p = (\gamma-1)\left(E - \frac{1}{2}\rho |\mathbf{v}|^2 - \frac{|\mathbf{B}|^2}{2\mu_0}\right).
+\]
+The term in parentheses is the internal-energy density. In practice this pressure formula is where many failures show up first when the numerics become too aggressive, which is why the code includes positivity floors on density and pressure.
+
+\section{Magnetic pressure and magnetic tension during compression}
+The magnetic part of the momentum flux can be interpreted as two physically different effects.
+
+\subsection{Magnetic pressure}
+The isotropic part,
+\[
+p_B = \frac{|\mathbf{B}|^2}{2\mu_0},
+\]
+acts like an additional pressure. Regions of stronger magnetic field act like regions of greater magnetic stress and tend to push outward.
+
+\subsection{Magnetic tension}
+The anisotropic part,
+\[
+-\frac{\mathbf{B}\mathbf{B}}{\mu_0},
+\]
+represents line tension along magnetic-field lines. A bent field line behaves like a stretched string that resists transverse distortion.
+
+During boundary-driven compression, both effects matter. Magnetic pressure resists excessive local pileup, while magnetic tension can redistribute force along field lines and promote anisotropic response.
+
+\begin{keybox}
+\textbf{Why magnetic-field strength can increase during compression.} In ideal MHD, the field is frozen into the bulk plasma motion at the continuum level. When the fluid is compressed, magnetic flux is also crowded into a smaller region. That is why inward compression can amplify $|\mathbf{B}|$ at the same time that it amplifies density.
+\end{keybox}
+
+\section{Meaning of flux freezing in this project}
+The phrase \emph{flux freezing} does not mean that field lines are literal material objects. It means that in ideal MHD the magnetic field is advected with the plasma flow strongly enough that the local fluid motion determines how magnetic flux is redistributed. For this project, the practical implication is simple: if the boundary drive squeezes plasma inward, then it also tends to squeeze magnetic flux inward.
+
+This is one reason the project cares about uniform compression of \emph{both} fluid and field. A drive that compresses density strongly but distorts the magnetic structure badly is not as good as a drive that compresses both in a smooth, symmetric way.
+
+\section{What inward compression means on a fixed Eulerian grid}
+The computational grid is fixed in space. That means no grid point moves inward. Compression instead appears through the evolving state variables:
+\begin{itemize}
+    \item the boundary conditions impose inward-directed motion or pressure forcing,
+    \item compressive waves propagate from the boundaries into the domain,
+    \item those waves interact in the interior, and
+    \item density, pressure, and magnetic-field strength rise in the compressed region.
+\end{itemize}
+
+So the project is Eulerian in numerics but still genuinely compressive in physics.
+
+\section{Why density and magnetic field can intensify together}
+The continuity equation says density rises when converging flow causes negative velocity divergence. The induction equation says the magnetic field is simultaneously advected and compressed by that same converging motion. As a result, inward drive can cause:
+\begin{enumerate}
+    \item increasing mass density $\rho$,
+    \item increasing thermal pressure $p$ through compression work,
+    \item increasing magnetic pressure $p_B$ through field amplification.
+\end{enumerate}
+
+Those three increases do not remain perfectly proportional in general. Their balance depends on field orientation, drive symmetry, pulse timing, and wave interactions. That balance is exactly what later diagnostics will measure.
+
+\section{Concluding summary}
+The baseline forward model in \texttt{MHD\_BoundaryCompression} is the conservative ideal MHD system in a fixed rectangular Eulerian domain. External drive is applied through boundary conditions, not through a moving grid. The key physical consequence is that inward forcing can increase both density and magnetic-field strength. The project therefore studies not just how much compression occurs, but how uniformly and symmetrically the coupled fluid--magnetic compression develops.
+
+\end{document}

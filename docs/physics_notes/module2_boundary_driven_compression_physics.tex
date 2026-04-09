@@ -1,0 +1,124 @@
+\documentclass[11pt]{article}
+\input{../shared/project_style.tex}
+\begin{document}
+
+\docheader{Module 2: Boundary-Driven Compression Physics}{How inward boundary forcing launches waves, shocks, and interior stagnation}{Purpose: explain the qualitative plasma dynamics produced when the outer boundary of a magnetized two-dimensional domain is driven inward in time.}
+
+\begin{overviewbox}
+\textbf{What this note does.} This note gives the physical picture of how a boundary drive communicates with the plasma interior. The most important ideas are wave launching, compression-front interaction, symmetry, and the difference between smooth compression and distorted compression.
+\end{overviewbox}
+
+\symboltableheader
+$\mathbf{n}$ & outward unit normal & Unit vector normal to a boundary face.\\
+$v_n$ & normal velocity & Fluid velocity component normal to a boundary.\\
+$f_t(t)$ & temporal pulse profile & Time-dependent drive envelope.\\
+$f_s(s)$ & spatial profile & Drive variation along a boundary coordinate $s$.\\
+$c_s$ & sound speed & Thermal compressive-wave speed.\\
+$v_A$ & Alfv\'en speed & Magnetic-tension wave speed.\\
+$c_f$ & fast magnetosonic speed & Characteristic speed of the fastest compressive MHD disturbance.\\
+$T_{\text{pulse}}$ & pulse duration & Characteristic time over which the boundary drive is active.\\
+$\tau_r$ & rise time & Characteristic turn-on time of the pulse.\\
+$\mathcal{S}$ & symmetry measure & Generic indicator of side-to-side similarity in the driven compression.\\
+\symboltableend
+
+\section{Physical picture of inward boundary forcing}
+Suppose the outer boundary is forced inward with a prescribed normal velocity. The plasma adjacent to that boundary cannot ignore the forcing. Because the plasma has inertia and pressure, the boundary motion launches a compressive disturbance into the interior.
+
+If the drive is gentle, the disturbance behaves as a smooth compression wave. If the drive is stronger or steeper in time, it can sharpen and behave more like a shock. Either way, the information from the boundary is not communicated instantaneously. It propagates inward at a finite MHD signal speed.
+
+\begin{physicsbox}
+\textbf{Core idea.} The boundary does not compress the whole domain at once. It only directly acts on the edge. The interior learns about that action through inward-propagating MHD disturbances.
+\end{physicsbox}
+
+\section{Weak compression waves versus strong shocks}
+A smooth inward push generally launches a compressive wave whose speed is controlled by the local wave speeds of the magnetized plasma. In MHD, the fastest compressive response is often related to the fast magnetosonic speed $c_f$.
+
+When the imposed boundary speed is modest compared with the characteristic signal speeds, the wave can remain relatively smooth. When the drive becomes stronger or the pulse turns on too abruptly, the front steepens. In that limit the solution develops stronger gradients, numerical demands increase, and the compression can become less uniform because the flow is dominated by sharp front interactions rather than smooth inward convergence.
+
+\section{Why wave propagation speed matters}
+The wave speed matters for two reasons.
+\begin{enumerate}
+    \item It sets how quickly the drive reaches the center.
+    \item It sets how pulse timing should be chosen if multiple sides are driven together.
+\end{enumerate}
+
+If the pulse duration is short compared with the time needed for the front to reach the center, then the domain behaves more like a transiently struck target. If the pulse is longer, the interior may experience a more sustained compression phase. That difference strongly affects whether the core becomes smoothly compressed or develops large residual motion.
+
+\section{Interaction of waves arriving from multiple sides}
+When all four sides are driven inward symmetrically, compression fronts travel from left, right, bottom, and top toward the interior. Their interaction is the essential event of the project.
+
+In the ideal symmetric picture:
+\begin{itemize}
+    \item each front reaches the interior at the same time,
+    \item the resulting stagnation region forms near the geometric center, and
+    \item the core becomes denser and more magnetized without large directional bias.
+\end{itemize}
+
+In a non-ideal or asymmetric picture, fronts can arrive with timing mismatch or unequal strength. Then the nominal center shifts, one side can over-compress earlier than another, and the stagnation region can carry residual flow.
+
+\section{Stagnation and central compression}
+The word \emph{stagnation} here means that the converging flow slows strongly in the interior after the inward-traveling fronts interact. A good compression state is not just a momentary spike in density. It is a compressed region that also has relatively small residual core velocity.
+
+That is why the diagnostics later include both compression metrics and stagnation metrics. A run that reaches high peak density but leaves strong sloshing motion in the core may be less useful than a slightly weaker but more settled compression.
+
+\section{Symmetry versus asymmetry in boundary forcing}
+A symmetric drive is the cleanest first case because it makes the interpretation easier. If the input is symmetric and the domain is symmetric, then major asymmetry in the resulting fields is either physical instability, numerical error, or an implementation bug.
+
+Asymmetry can be introduced in many ways:
+\begin{itemize}
+    \item one wall begins earlier than another,
+    \item one wall has larger amplitude,
+    \item the spatial drive profile is tapered differently on each side,
+    \item corners receive effectively stronger or weaker forcing,
+    \item the background magnetic field biases wave propagation direction.
+\end{itemize}
+
+Each of these can spoil uniform compression even when the average inward impulse remains similar.
+
+\section{Possible causes of nonuniform compression}
+Several mechanisms can make the interior compression nonuniform:
+\begin{enumerate}
+    \item \textbf{timing mismatch:} fronts do not meet simultaneously,
+    \item \textbf{amplitude mismatch:} one side drives more strongly,
+    \item \textbf{pulse-shape mismatch:} one front is sharper or broader than the others,
+    \item \textbf{field-direction effects:} magnetic tension redistributes force anisotropically,
+    \item \textbf{wave reflection and corner effects:} local interference distorts the flow,
+    \item \textbf{excessive drive strength:} strong shocks produce steep, structured gradients rather than smooth pileup.
+\end{enumerate}
+
+These mechanisms motivate the drive-model abstraction. The project wants to compare many drive choices without rewriting the solver every time.
+
+\section{Why the temporal pulse shape matters}
+The pulse shape controls how abruptly momentum is injected from the edge. A discontinuous turn-on can create large transients that are more a property of the forcing method than of the intended compression experiment. A smooth pulse is therefore preferable for the baseline case.
+
+Useful pulse-shape controls include:
+\begin{itemize}
+    \item rise time,
+    \item peak duration,
+    \item fall time,
+    \item repetition interval for pulse trains.
+\end{itemize}
+
+These controls matter because they determine whether the domain experiences one strong inward event, several smaller repeated impulses, or a long sustained squeeze.
+
+\begin{keybox}
+\textbf{Practical interpretation.} In this project, pulse shape is not cosmetic. It is one of the main physical design knobs that changes how fronts form, when they reach the center, and whether the interior compression ends up smooth or ragged.
+\end{keybox}
+
+\section{How the baseline case should behave qualitatively}
+For the first symmetric four-sided inward pulse, the expected evolution is:
+\begin{enumerate}
+    \item the boundaries begin to push inward smoothly,
+    \item compressive disturbances propagate inward from all sides,
+    \item density and magnetic-field strength rise progressively toward the interior,
+    \item the fronts interact near the center,
+    \item a compressed core forms, and
+    \item the diagnostics reveal whether that core is symmetric, uniform, and near stagnation.
+\end{enumerate}
+
+This expected picture becomes the baseline standard against which stronger, shorter, longer, or asymmetric drives can be compared.
+
+\section{Concluding summary}
+Boundary-driven compression is a problem of communication through finite-speed magnetized waves. The outer boundary launches inward disturbances, those disturbances interact in the interior, and the quality of the compressed state depends on symmetry, timing, pulse shape, and magnetic anisotropy. The project is therefore not only a question of how much inward momentum is applied, but of how that momentum is distributed in time and space and how the plasma converts it into a compressed interior state.
+
+\end{document}

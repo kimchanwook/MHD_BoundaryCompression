@@ -1,0 +1,128 @@
+\documentclass[11pt]{article}
+\input{shared/project_style.tex}
+\lhead{MHD\_BoundaryCompression}
+\rhead{Code / File Roadmap}
+\begin{document}
+\DocTitle{Code and File Roadmap}{Repository structure and run-flow logic for MHD\_BoundaryCompression}{Purpose: explain what belongs in each file and folder, how a run moves through the repository, and why the code is layered by physical and numerical responsibility.}
+\begin{overviewbox}
+\textbf{Document purpose.} Purpose: explain what belongs in each file and folder, how a run moves through the repository, and why the code is layered by physical and numerical responsibility.
+\end{overviewbox}
+\section{Symbol and acronym table}
+\begin{symtable}
+MHD & magnetohydrodynamics & Governing plasma-fluid model used throughout the repository. \\
+GLM & generalized Lagrange multiplier & Divergence-cleaning approach used in the upgraded solver path. \\
+RK2 & second-order Runge--Kutta & Two-stage explicit time integrator used by the forward solver. \\
+PLM & piecewise-linear method & Higher-order reconstruction used in the stage-2 solver upgrade. \\
+HLL & Harten--Lax--van Leer & Approximate Riemann solver used for numerical fluxes. \\
+CFL & Courant--Friedrichs--Lewy & Stability condition that limits the explicit time step. \\
+MAT & MATLAB binary file & Primary structured output format for run histories and summary data. \\
+CSV & comma-separated values & Text-table export format for summary metrics and rankings. \\
+\end{symtable}
+
+\section{Purpose of this roadmap}
+This document explains how the files are organized and why they are separated the way they are. It is not merely a directory listing. Its job is to tell the reader where each physical or numerical responsibility lives in the repository.
+
+\section{Top-level scripts}
+\subsection{\texttt{main\_baseline\_symmetric\_compression.m}}
+This is the most direct single-run entry point. It loads a baseline case, constructs the configuration structures, builds the grid, initializes the state, constructs the drive model, advances the forward solver, computes diagnostics, and writes plots and outputs.
+
+\subsection{\texttt{main\_drive\_parameter\_sweep.m}}
+This script automates repeated runs within one drive family. Its job is to vary selected parameters, execute the same workflow repeatedly, and gather scalar performance metrics for ranking.
+
+\subsection{\texttt{main\_compare\_drive\_models.m}}
+This script is intended for comparing distinct drive families under a common evaluation framework. The scientific value is that it separates the comparison question from the solver internals.
+
+\subsection{\texttt{main\_baseline\_study\_suite.m}}
+This is the curated-study entry point introduced at a later project stage. It runs a small named set of physically meaningful cases rather than a blind parameter sweep.
+
+\section{Cases directory}
+The \texttt{cases/} folder should contain human-readable experiment definitions rather than numerical logic. Each case file should define:
+\begin{itemize}[leftmargin=1.8em]
+    \item domain size and grid resolution,
+    \item baseline plasma parameters,
+    \item magnetic-field initialization,
+    \item drive family selection and parameter values,
+    \item diagnostic and output settings,
+    \item run label and metadata.
+\end{itemize}
+The baseline and template cases currently serve the following roles:
+\begin{itemize}[leftmargin=1.8em]
+    \item \texttt{case\_baseline\_symmetric.m}: first reference problem,
+    \item \texttt{case\_baseline\_xonly.m}: reduced-direction comparison case,
+    \item template cases: placeholders for asymmetric timing, pulse trains, and spatial patterns.
+\end{itemize}
+
+\section{Source-code layers}
+\subsection{\texttt{src/config/}}
+Stores the default parameter builders and the case-assembly logic. This folder centralizes configuration so that case files remain readable and future studies can reuse consistent defaults.
+
+\subsection{\texttt{src/grid/}}
+Constructs the structured mesh and the boundary index sets. These functions define the computational geometry seen by the solver and by the boundary-condition layer.
+
+\subsection{\texttt{src/state/}}
+Handles initialization and variable conversion. This layer is where primitive variables become conserved variables, and where positivity floors are enforced.
+
+\subsection{\texttt{src/physics/}}
+Collects reusable local physics calculations such as pressure, sound speed, Alfv\'en speed, fast magnetosonic speed, and total energy. These functions support both the solver and the diagnostics.
+
+\subsection{\texttt{src/solver/}}
+Contains the forward numerical engine. This folder includes the RK2 update, CFL time-step logic, reconstruction, HLL fluxes, right-hand-side assembly, and divergence-cleaning routines. It is the numerical core of the repository.
+
+\subsection{\texttt{src/boundary/}}
+Converts physical boundary prescriptions into actual ghost-cell states or equivalent numerical boundary values. This separation matters because the physical drive family and the numerical ghost-cell treatment should not be hard-wired together.
+
+\subsection{\texttt{src/drive\_models/}}
+Defines the physical drive families themselves. The most important functions here are the drive constructor and the drive-evaluation interface. This is the layer that lets the solver ask what boundary prescription should be used at a given time and place.
+
+\subsection{\texttt{src/diagnostics/}}
+Computes scalar measures of compression quality: compression ratios, uniformity metrics, symmetry penalties, stagnation measures, divergence diagnostics, and objective-function components.
+
+\subsection{\texttt{src/analysis/}}
+Supports multi-run interpretation. This folder contains summary exporters, ranking utilities, curated-suite builders, and sweep postprocessing.
+
+\subsection{\texttt{src/plotting/}}
+Contains run visualization and study-comparison plotting routines. This is where the code turns histories and fields into interpretable figures.
+
+\subsection{\texttt{src/utils/}}
+Provides lightweight support functions such as output-directory creation, validation checks, and name-generation helpers.
+
+\section{Documentation folder}
+The \texttt{docs/} directory is intended to preserve project memory. It should contain:
+\begin{itemize}[leftmargin=1.8em]
+    \item physics notes,
+    \item derivation notes,
+    \item implementation notes,
+    \item run-order and file-map documents,
+    \item interview-facing explanatory notes when useful.
+\end{itemize}
+This documentation layer is especially important for this repository because the scientific question depends heavily on clearly defined diagnostics and drive abstractions.
+
+\section{Tests folder}
+The \texttt{tests/} directory should contain pass--fail checks rather than exploratory physics studies. The tests currently focus on properties such as:
+\begin{itemize}[leftmargin=1.8em]
+    \item uniform-state preservation,
+    \item zero-amplitude drive behavior,
+    \item symmetry preservation under symmetric driving,
+    \item positivity of density and pressure,
+    \item drive-interface output consistency,
+    \item divergence monitoring,
+    \item monotonicity of the PLM reconstruction.
+\end{itemize}
+
+\section{How a run flows through the repository}
+A typical run should be understood in this order:
+\begin{enumerate}[leftmargin=1.8em]
+    \item a top-level script chooses a case,
+    \item the case is assembled into a full configuration,
+    \item the grid and initial state are created,
+    \item the selected drive model is constructed,
+    \item the solver advances the MHD state in time,
+    \item diagnostics are computed from the evolving fields,
+    \item analysis and plotting routines convert raw outputs into interpretable results,
+    \item summary tables and files are exported.
+\end{enumerate}
+
+\section{Concluding interpretation}
+The file map is intentionally layered so that a reader can understand the project by responsibility rather than by chronology. Cases define experiments, source functions implement reusable machinery, documentation explains the physics and workflow, and tests guard against basic regressions. That separation is one of the main reasons the repository can grow into a broader compression-study code without becoming structurally confusing.
+
+\end{document}

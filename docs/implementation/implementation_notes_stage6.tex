@@ -1,0 +1,51 @@
+\documentclass[11pt]{article}
+\input{shared/project_style.tex}
+\lhead{MHD\_BoundaryCompression}
+\rhead{Stage 6 Notes}
+\begin{document}
+\DocTitle{Implementation Notes -- Stage 6}{Curated baseline study suite}{Purpose: explain how the repository moved from generic sweeps to a small named comparison suite whose runs each test a distinct physical question about amplitude, pulse duration, or symmetry breaking.}
+\begin{overviewbox}
+\textbf{Document purpose.} Purpose: explain how the repository moved from generic sweeps to a small named comparison suite whose runs each test a distinct physical question about amplitude, pulse duration, or symmetry breaking.
+\end{overviewbox}
+\section{Symbol and acronym table}
+\begin{symtable}
+suite & curated run set & Small named collection of comparison cases with clear scientific roles. \\
+weak / moderate / strong & drive-amplitude labels & Comparative levels of inward boundary forcing. \\
+shorter / longer pulse & pulse-duration labels & Comparative changes in temporal drive width. \\
+asymmetric timing perturbation & symmetry-breaking case & Case used to probe sensitivity to imperfect synchronization. \\
+$J$ & objective function & Scalar used to rank the curated cases under the upgraded diagnostic framework. \\
+\end{symtable}
+
+\section{Purpose of Stage 6}
+A generic parameter sweep is useful for broad scanning, but it is not always the best vehicle for scientific explanation. Stage 6 therefore introduces a curated study suite: a small set of named runs chosen because each one tests a specific physical idea.
+
+\section{The curated run set}
+The current suite contains six baseline runs:
+\begin{enumerate}[leftmargin=1.8em]
+    \item weak symmetric pulse,
+    \item moderate symmetric pulse,
+    \item strong symmetric pulse,
+    \item shorter symmetric pulse,
+    \item longer symmetric pulse,
+    \item asymmetric timing perturbation.
+\end{enumerate}
+This set is intentionally compact. The aim is to produce a first interpretable figure and table set rather than an exhaustive optimization campaign.
+
+\section{Why this is better than a blind sweep}
+Each curated case has a clear explanatory role. The amplitude trio probes how strongly the plasma can be driven before uniformity begins to degrade. The pulse-width variations probe temporal shaping. The timing-perturbation case probes sensitivity to loss of synchronization and therefore to symmetry breaking.
+
+\section{Recommended interpretation order}
+The outputs of the curated suite should be read in the following order:
+\begin{enumerate}[leftmargin=1.8em]
+    \item compare peak objective values,
+    \item compare compression ratios at the best times,
+    \item compare nonuniformity metrics,
+    \item inspect symmetry and stagnation penalties,
+    \item check divergence behavior before trusting the ranking.
+\end{enumerate}
+This order avoids the mistake of ranking runs by one dramatic scalar while ignoring whether the compressed state remained scientifically credible.
+
+\section{Why this stage matters}
+Stage 6 is the point where the repository starts to behave like a real study rather than a solver-development exercise. The code can now generate a compact, named, discussion-ready comparison set that can motivate the next controlled family of studies, such as spatial tapering or pulse trains.
+
+\end{document}
