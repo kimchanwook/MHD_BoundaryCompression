@@ -14,6 +14,7 @@ $\Omega_{\text{core}}$ & core region & Interior subregion used to evaluate compr
 $C_{\rho}$ & density compression ratio & Ratio of current to initial core-averaged density.\\
 $C_p$ & pressure compression ratio & Ratio of current to initial core-averaged pressure.\\
 $C_B$ & magnetic compression ratio & Ratio of current to initial core-averaged magnetic-field magnitude.\\
+$C_{p_{\mathrm{tot}}}$ & total-pressure compression ratio & Ratio built from thermal plus magnetic pressure.\\
 $U_q$ & uniformity metric & Normalized standard deviation of quantity $q$ over the core.\\
 $S_q$ & symmetry metric & Mismatch between a field and its reflected counterpart.\\
 $U_v$ & stagnation metric & Core-averaged speed measuring residual core motion.\\
@@ -56,6 +57,17 @@ C_B(t) = \frac{\langle |\mathbf{B}(t)|\rangle_{\text{core}}}{\langle |\mathbf{B}
 \]
 An alternative is to use $|\mathbf{B}|^2$, which is directly proportional to magnetic pressure.
 
+\subsection{Total-pressure compression ratio}
+Because strong compression may trade thermal and magnetic contributions against one another, it is often useful to monitor total pressure,
+\[
+p_{\mathrm{tot}} = p + \frac{|\mathbf{B}|^2}{2\mu_0}.
+\]
+A corresponding metric is
+\[
+C_{p_{\mathrm{tot}}}(t) = \frac{\langle p_{\mathrm{tot}}(t)\rangle_{\text{core}}}{\langle p_{\mathrm{tot}}(0)\rangle_{\text{core}}}.
+\]
+This is helpful when a drive produces strong magnetic amplification without proportionally large thermal compression, or vice versa.
+
 \section{Uniformity metrics}
 For any field $q$, define the normalized spatial variation over the core by
 \[
@@ -67,7 +79,8 @@ In this project, the most important choices are:
 \begin{itemize}
     \item $U_{\rho}(t)$ for density uniformity,
     \item $U_{p}(t)$ for pressure uniformity,
-    \item $U_{B}(t)$ for magnetic-field uniformity.
+    \item $U_{B}(t)$ for magnetic-field uniformity,
+    \item optionally $U_{p_{\mathrm{tot}}}(t)$ for total-pressure uniformity.
 \end{itemize}
 
 \begin{physicsbox}
@@ -77,7 +90,7 @@ In this project, the most important choices are:
 \section{Symmetry metrics}
 When the applied drive is designed to be symmetric, the interior solution should reflect that symmetry. One can therefore define reflection-based mismatch measures. For example, left-right density symmetry might be measured schematically as
 \[
-S_{\rho}^{(x)}(t) = \frac{\norm{\rho(x,y,t)-\rho(L_x-x,y,t)}}{\norm{\rho(x,y,t)}}.
+S_{\rho}^{(x)}(t) = \frac{\lVert\rho(x,y,t)-\rho(L_x-x,y,t)\rVert}{\lVert\rho(x,y,t)\rVert}.
 \]
 Similar measures can be defined for top-bottom symmetry and for other variables such as $|\mathbf{B}|$ or pressure.
 
@@ -92,21 +105,21 @@ A smaller value indicates that the converging flow has slowed in the core and th
 
 This metric matters because two drive prescriptions can produce similar peak compression while leaving very different levels of post-collision sloshing.
 
-\section{Peak-time, final-time, and time-averaged scores}
+\section{Peak-time, final-time, and time-window scores}
 There is no single best time summary for every study. Three useful summaries are:
 \begin{enumerate}
     \item \textbf{peak objective:} the best score reached at any time,
     \item \textbf{final objective:} the score at the end of the run,
-    \item \textbf{time-averaged objective:} the average score over a selected time window.
+    \item \textbf{time-window objective:} the average score over a selected time interval around the compression event.
 \end{enumerate}
 
-Each reveals something different. Peak score favors short-lived optimum compression events. Final score favors more persistent end states. Time average favors sustained good behavior.
+Each reveals something different. Peak score favors short-lived optimum compression events. Final score favors more persistent end states. A time-window score favors sustained good behavior and is often more robust than using a single time sample.
 
 \section{Composite objective function}
 A useful first composite objective has the schematic form
 \[
 J = w_{\rho} C_{\rho}^{\ast} + w_p C_p^{\ast} + w_B C_B^{\ast}
-- w_{u\rho} U_{\rho} - w_{up} U_p - w_{uB} U_B - w_s S - w_v U_v - w_{\nabla\cdot B} D,
+- w_{u\rho} U_{\rho} - w_{up} U_p - w_{uB} U_B - w_s S - w_v U_v - w_{\nabla\!\cdot\!B} D,
 \]
 where:
 \begin{itemize}
@@ -126,13 +139,14 @@ To compare drive configurations honestly, the following should remain fixed unle
     \item domain size and grid resolution,
     \item core-region definition,
     \item run duration,
+    \item diagnostic definitions,
     \item objective weights.
 \end{itemize}
 
 Only then does it make sense to interpret differences in objective score as differences caused by the drive itself rather than by shifting analysis conventions.
 
 \begin{keybox}
-\textbf{Practical rule.} Compression metrics answer \emph{how much}. Uniformity and symmetry metrics answer \emph{how well}. The objective function is meaningful only if both categories are represented explicitly.
+\textbf{Practical rule.} Compression metrics answer \emph{how much}. Uniformity and symmetry metrics answer \emph{how well}. Stagnation metrics answer \emph{how settled}. A meaningful objective must include all three categories explicitly.
 \end{keybox}
 
 \section{Concluding summary}

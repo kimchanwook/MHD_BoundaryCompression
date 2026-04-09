@@ -2,134 +2,147 @@
 \input{../shared/project_style.tex}
 \begin{document}
 
-\docheader{Module 3: Boundary Drive Models}{Abstraction of the external drive from the MHD solver core}{Purpose: define the drive-model interface so that prescribed velocity, pressure loading, moving-wall logic, and future pulse variants can be compared within one solver architecture.}
+\docheader{Module 3: Boundary Drive Models}{A clean taxonomy of external drive families and why they must be abstracted from the solver}{Purpose: define the drive-model interface so that prescribed velocity, pressure loading, moving-wall logic, and future pulse variants can be compared within one solver architecture.}
 
 \begin{overviewbox}
-\textbf{What this note does.} This note separates the physical idea of the \emph{drive} from the numerical machinery of the solver. That separation is one of the most important architectural choices in the repository because it preserves extensibility without sacrificing clarity.
+\textbf{What this note does.} This note separates the \emph{physical drive family} from the \emph{numerical boundary implementation}. That separation is one of the main architectural choices of the repository because it lets the compression physics evolve without rewriting the conservative MHD solver.
 \end{overviewbox}
 
 \symboltableheader
 \texttt{driveModel} & drive-model structure & MATLAB structure containing the active drive type, parameters, and profile definitions.\\
 \texttt{evaluate\_drive} & drive API & Function that returns the boundary prescription at the current time and location.\\
 $v_n$ & normal velocity prescription & Inward or outward velocity applied normal to a wall.\\
-$v_t$ & tangential velocity prescription & Velocity applied tangent to the wall, if used.\\
+$v_t$ & tangential velocity prescription & Velocity applied tangent to a wall, if used.\\
 $p_{\text{bc}}$ & boundary pressure & Pressure value used by a pressure-loading model.\\
 $s$ & boundary coordinate & Position coordinate measured along a wall.\\
 $f_t(t)$ & temporal profile & Time envelope of the drive.\\
 $f_s(s)$ & spatial profile & Variation of the drive along the wall.\\
 $A$ & drive amplitude & Scalar strength parameter for the drive.\\
+$\Delta t_{\text{side}}$ & side timing offset & Delay applied to an individual wall relative to a reference pulse.\\
 \symboltableend
 
 \section{Why a drive abstraction is needed}
-The core solver advances the ideal MHD equations. It should not have to know whether the boundary forcing is conceptually a wall moving inward, a pressure applied at the edge, or a pulse train with side-to-side time offsets. Those are different physical experiments, but they should all pass through a common interface.
+The core solver advances the ideal MHD equations. It should not need to know whether the experimenter thinks of the forcing as a moving wall, an applied pressure, a sequence of repeated pulses, or a side-dependent timing pattern. Those are different physical ideas, but they should reach the solver through a common interface.
 
-Without an abstraction layer, every new drive concept would force edits throughout the code base. With an abstraction layer, the solver can simply ask:
+Without an abstraction layer, every new drive idea would require edits scattered across boundary routines, solver logic, and diagnostics. With a drive abstraction, the solver can ask one clean question:
 \begin{quote}
-At this boundary location and this time, what boundary state or prescription should be applied?
+At this boundary location and this time, what physical boundary prescription is active?
 \end{quote}
 
-That design keeps the project scientifically cleaner and also makes later optimization workflows possible.
+That separation is scientifically cleaner and it also prepares the repository for later parameter sweeps or optimization.
 
-\section{Separation of roles}
-The repository should distinguish two layers clearly.
-
+\section{Two layers that must remain distinct}
 \subsection{Physical drive model}
-This layer defines what the experimenter intends to do physically:
+This layer expresses the intended experiment. Examples include:
 \begin{itemize}
-    \item push inward with a given normal speed,
-    \item apply pressure loading,
-    \item move the effective wall,
-    \item stagger wall timing,
-    \item impose a spatial taper.
+    \item push inward with a prescribed normal speed,
+    \item apply a pressure load at the edge,
+    \item move the effective wall inward in time,
+    \item stagger the timing from wall to wall,
+    \item taper the strength along each wall.
 \end{itemize}
 
 \subsection{Numerical boundary imposition}
-This layer translates the physical intent into ghost-cell states or boundary fluxes. For example, a prescribed inward normal velocity is not itself a conserved variable. It must be converted into a boundary state consistent with the solver's primitive or conservative variables.
+This layer converts the physical intention into ghost-cell states, boundary fluxes, or other numerical data structures required by the finite-volume solver.
+
+A prescribed normal velocity is not itself a full MHD state. One still must decide what density, pressure, tangential velocity, and magnetic components are consistent with that prescription at the boundary. That is why the repository should never confuse ``what the drive wants'' with ``what state is actually imposed in ghost cells.''
 
 \begin{physicsbox}
-\textbf{Architectural principle.} One should be able to change the \emph{physical drive family} without having to rewrite the conservative update, the flux routines, or the diagnostics. That is the main reason the interface exists.
+\textbf{Architectural principle.} The physical drive family should be replaceable without changing the conservative update, Riemann-solver logic, reconstruction, or diagnostics. That is the real purpose of the interface.
 \end{physicsbox}
 
-\section{Baseline drive model: prescribed inward boundary velocity}
-The first drive model is the simplest one that still captures the project's core question. The boundary is given a normal velocity prescription of the form
+\section{Baseline drive family: prescribed inward normal velocity}
+The first drive family is intentionally the simplest one that still captures the central compression physics. The boundary is given a normal-velocity prescription of the form
 \[
-v_n(s,t) = -A\,f_t(t)\,f_s(s),
+ v_n(s,t) = -A\,f_t(t)\,f_s(s),
 \]
 where the sign convention is chosen so that positive amplitude corresponds to inward compression.
 
-The simplest baseline case chooses:
+This baseline is attractive for three reasons:
+\begin{enumerate}
+    \item it is easy to interpret physically,
+    \item it is straightforward to implement on a fixed Eulerian grid, and
+    \item it can be generalized later by modifying amplitude, timing, or spatial taper without redesigning the solver.
+\end{enumerate}
+
+For the clean reference case, all four walls share the same amplitude, the same pulse shape, and a uniform spatial profile along each wall.
+
+\section{Pressure-loading family}
+A pressure-loading drive does not prescribe boundary velocity directly. Instead, it prescribes a pressure or pressure increment at the boundary. Physically, this corresponds more closely to loading the plasma through stress rather than by directly commanding kinematics.
+
+This is a useful future family because two drives can inject similar overall impulse while producing different transient structures. A pressure-driven loading may therefore compress the plasma differently from a velocity-driven loading even when the gross strength appears similar.
+
+\section{Moving-wall family}
+A moving-wall model makes a stronger physical statement: the boundary itself changes position in time. That idea is closer to literal geometric compression, but it is also numerically more complicated.
+
+Once the wall actually moves, one must decide whether:
 \begin{itemize}
-    \item the same amplitude on every wall,
-    \item the same temporal pulse on every wall,
-    \item a spatially uniform profile along every wall.
+    \item the computational mesh moves with it,
+    \item a mapped coordinate system is used,
+    \item an immersed-boundary or cut-cell method is needed.
 \end{itemize}
 
-This is the right first implementation because it is easy to interpret and easy to generalize.
+That added complexity is exactly why the project begins with prescribed boundary velocity on a fixed grid. The fixed-grid model captures the first compression physics without forcing the numerical infrastructure to grow too early.
 
-\section{Pressure-loading concept}
-A pressure-loading model would not prescribe velocity directly. Instead, it would specify a boundary pressure or pressure increment. Physically, that corresponds more closely to pushing on the plasma through stress rather than kinematic motion.
+\section{Pulse-train family}
+A pulse-train drive applies repeated inward pushes rather than a single event. Physically, this can generate a sequence of inward-traveling fronts that interact constructively or destructively depending on their spacing.
 
-This is worth keeping as a future option because two drives can inject similar net impulse while producing different transient structures. A pressure-based drive may also be a more natural abstraction for some physical compression systems.
+This family matters because repeated smaller pushes may sometimes build compression more smoothly than one violent impulse. It also introduces a natural control space: pulse spacing, pulse width, pulse amplitude, and number of pulses.
 
-\section{Moving-wall concept}
-A moving-wall model treats the boundary as a geometrically moving interface. That is a stronger statement than prescribed boundary velocity on a fixed grid. It moves the wall itself rather than only imposing a kinematic state at a stationary boundary location.
+\section{Asymmetric timing family}
+One scientifically useful perturbation is to break perfect synchrony. For example, the top boundary can be delayed relative to the other three boundaries. That is a clean way to test how sensitive the compressed core is to timing mismatch.
 
-This model is more complicated numerically because one must decide whether the mesh moves, whether a mapped coordinate system is used, or whether the wall is represented through an immersed or cut-cell idea. That complexity is exactly why the project should begin with the fixed-grid prescribed-velocity model first.
+The interface should therefore allow each wall to carry its own timing offset, even if all walls share the same underlying pulse shape:
+\[
+ f_t^{\text{(side)}}(t) = f_t\bigl(t-\Delta t_{\text{side}}\bigr).
+\]
 
-\section{Pulse-train concept}
-A pulse train applies repeated inward impulses rather than one single pulse. Physically, that may generate a sequence of inward-traveling fronts that interact constructively or destructively depending on timing.
+This simple idea is valuable in interviews because it shows that the project is already framed as a controllable design problem, not just as one fixed run.
 
-This concept matters because repeated small pulses can sometimes create a more controlled accumulation of compression than one large impulsive event. The abstraction layer should therefore support a temporal profile that is either a single pulse or a repeated train of pulses.
+\section{Spatially varying wall loading}
+The drive does not need to be uniform along a wall. The spatial profile $f_s(s)$ can be:
+\begin{itemize}
+    \item uniform,
+    \item center-weighted,
+    \item corner-weighted,
+    \item tapered smoothly to reduce corner forcing,
+    \item user-defined from a parameterized family.
+\end{itemize}
 
-\section{Asymmetric timing concept}
-One of the scientifically useful perturbations is to break perfect wall synchrony. For example, one can delay the top boundary relative to the left, right, and bottom boundaries. This is a clean way to study how sensitive the compression quality is to timing mismatch.
+This matters because local wall loading changes how fronts are focused into the interior. A profile that is too strong near corners may create edge-dominated structures, while a center-weighted profile may produce a different compression topology altogether.
 
-The abstraction layer should support this by allowing each wall to carry its own temporal offset even when the underlying pulse shape is shared.
-
-\section{Spatially varying drive concept}
-The drive does not have to be uniform along a wall. It can be tapered, edge-weighted, center-weighted, or user-defined. That matters because local wall forcing can focus fronts differently and can either improve or worsen uniform compression in the interior.
-
-A good interface therefore separates the temporal profile $f_t(t)$ from the spatial profile $f_s(s)$. That way one can compare, for example, a broad smooth pulse with uniform wall loading against the same pulse with a cosine taper at the corners.
-
-\section{Recommended interface logic}
-A useful conceptual interface is:
+\section{Recommended drive-interface logic}
+A useful conceptual interface is
 \[
 \texttt{bcData = evaluate\_drive(driveModel, boundaryInfo, t, grid, stateInterior)}.
 \]
-The output \texttt{bcData} should indicate:
+The returned structure \texttt{bcData} should indicate:
 \begin{itemize}
     \item whether the boundary segment is active,
-    \item which quantity is prescribed,
-    \item what values should be imposed locally.
+    \item which physical quantity is being prescribed,
+    \item the local values to be imposed, and
+    \item any side-specific timing or taper information needed downstream.
 \end{itemize}
 
-For example, the returned structure may contain fields such as:
+A practical structure might contain fields such as
+\texttt{mode}, \texttt{vn}, \texttt{vt}, \texttt{p}, and \texttt{active}. This keeps the downstream boundary-condition code generic.
+
+\section{Relation between physical prescription and ghost-cell construction}
+A common conceptual mistake is to assume that the physical prescription is already the numerical boundary state. It is not. For example, a target normal velocity does not uniquely determine boundary density, pressure, tangential velocity, or magnetic field.
+
+That is why a clean repository usually separates:
 \begin{itemize}
-    \item \texttt{mode = 'prescribed\_normal\_velocity'},
-    \item \texttt{vn},
-    \item \texttt{vt},
-    \item \texttt{p},
-    \item \texttt{active}.
+    \item \texttt{src/drive\_models/}, which defines the physical intent, from
+    \item \texttt{src/boundary/}, which constructs ghost-cell states compatible with the solver.
 \end{itemize}
 
-This pattern lets the boundary-condition routines remain generic.
-
-\section{Relation between physical drive prescription and numerical boundary condition}
-A common confusion is to treat the physical prescription as though it were already the numerical boundary state. It is not. For example, specifying a target normal velocity does not by itself determine the boundary density, pressure, tangential velocity, or magnetic field. One still must choose a boundary-state construction rule.
-
-That is why the repository has separate directories for:
-\begin{itemize}
-    \item \texttt{src/drive\_models/} and
-    \item \texttt{src/boundary/}.
-\end{itemize}
-
-The first decides what the drive wants. The second decides how that desire becomes a ghost-cell state compatible with the MHD solver.
+This separation is not just software hygiene. It is the difference between a repository that can absorb new physical ideas cleanly and one that becomes brittle every time the experiment changes.
 
 \begin{keybox}
-\textbf{Practical consequence.} The architecture is ready for future optimization only if the drive parameters are encapsulated cleanly. Once the drive is represented by a parameterized object and an evaluation function, one can later sweep or optimize amplitude, timing, width, taper, or asymmetry without altering the solver core.
+\textbf{Optimization-ready interpretation.} Once the drive is represented as a parameterized object, one can later sweep or optimize amplitude, timing, taper, pulse width, repetition count, or side asymmetry without altering the core MHD solver.
 \end{keybox}
 
 \section{Concluding summary}
-The drive-model abstraction is the architectural bridge between physics design and numerical implementation. The baseline model prescribes inward normal boundary velocity on a fixed Eulerian grid. Future models may instead impose pressure loading, moving-wall logic, repeated pulses, timing asymmetry, or spatial patterning. The key design rule is that these alternatives should enter through the same drive interface, while the ideal MHD solver core remains unchanged.
+The drive-model abstraction is the bridge between physics design and solver implementation. The baseline family prescribes inward normal velocity on a fixed Eulerian grid because it is the simplest physically meaningful starting point. Pressure loading, moving walls, pulse trains, timing offsets, and spatial tapering are natural next families, but they should all enter through the same interface while the solver core remains unchanged.
 
 \end{document}
