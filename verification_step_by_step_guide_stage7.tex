@@ -1,0 +1,238 @@
+\documentclass[11pt]{article}
+\input{docs/shared/project_style.tex}
+\lhead{MHD\_BoundaryCompression}
+\rhead{Step-by-Step Verification Guide}
+\begin{document}
+\DocTitle{Stage 7 Verification Step-by-Step Guide}{Exactly what to run in MATLAB, in what order, and what each run is testing}{Purpose: provide an executable verification workflow for the current MHD\_BoundaryCompression repository before adding more physics or boundary-model complexity.}
+
+\begin{overviewbox}
+\textbf{How to use this document.} Open MATLAB in the repository root. Then run the files in the order listed here. Do not begin with the largest study scripts. Start with the narrow preservation checks, then move to the single baseline run, then the verification suite, and only then the grid-convergence and curated study scripts.
+\end{overviewbox}
+
+\section{Symbol and acronym table}
+\begin{symtable}
+$\rho$ & mass density & Fluid density in the ideal magnetohydrodynamic state vector. \\
+$p$ & thermal pressure & Gas pressure inferred from the conservative variables and the equation of state. \\
+$\mathbf{B}$ & magnetic field & Magnetic field vector with components $(B_x,B_y,B_z)$. \\
+$E$ & total energy density & Sum of internal, kinetic, and magnetic energy densities. \\
+$\nabla\!\cdot\!\mathbf{B}$ & magnetic-field divergence & Diagnostic for how well the numerical solution respects the divergence-free magnetic constraint. \\
+GLM & generalized Lagrange multiplier & Divergence-cleaning method that adds the scalar field $\psi$ to transport and damp $\nabla\!\cdot\!\mathbf{B}$ error. \\
+CFL & Courant-Friedrichs-Lewy & Stability restriction that limits the explicit time step based on signal speeds and grid spacing. \\
+\end{symtable}
+
+\section{What this verification stage is trying to establish}
+Before adding more physics, the current code should answer four simpler questions:
+\begin{enumerate}[leftmargin=1.8em]
+    \item Does a quiet or zero-drive problem stay quiet?
+    \item Does a symmetric drive remain approximately symmetric?
+    \item Do the integrated mass and energy histories behave reasonably?
+    \item Do the main summary metrics change in a more stable way as the grid is refined?
+\end{enumerate}
+If the answer to these is no, then later compression rankings are not yet trustworthy.
+
+\section{Repository location from which MATLAB should be run}
+Start MATLAB in the top-level repository directory:
+\begin{center}
+\texttt{MHD\_BoundaryCompression/}
+\end{center}
+The top-level scripts are intended to be run directly from that location by name. For example:
+\begin{itemize}[leftmargin=1.8em]
+    \item \texttt{main\_baseline\_symmetric\_compression}
+    \item \texttt{main\_verification\_suite}
+    \item \texttt{main\_grid\_convergence\_study}
+\end{itemize}
+
+\section{Step-by-step run order}
+This is the recommended order for the present repository.
+
+\subsection{Step 1: run the narrow tests in \texttt{tests/}}
+Run these first, because they are the fastest way to catch obvious structural failures.
+
+\begin{physicsbox}
+\textbf{Run these MATLAB files first}
+\begin{itemize}[leftmargin=1.8em]
+    \item \texttt{tests/test\_uniform\_state\_preservation.m}
+    \item \texttt{tests/test\_boundary\_drive\_zero\_amplitude.m}
+    \item \texttt{tests/test\_drive\_interface\_outputs.m}
+    \item \texttt{tests/test\_positive\_pressure\_density.m}
+    \item \texttt{tests/test\_symmetric\_drive\_symmetry\_preservation.m}
+    \item \texttt{tests/test\_energy\_component\_bookkeeping.m}
+    \item \texttt{tests/test\_zero\_drive\_energy\_stability.m}
+    \item \texttt{tests/test\_divB\_monitoring.m}
+    \item \texttt{tests/test\_glm\_zero\_state\_preservation.m}
+    \item \texttt{tests/test\_reconstruct\_plm\_monotonicity.m}
+    \item \texttt{tests/test\_core\_region\_definition.m}
+    \item \texttt{tests/test\_objective\_function\_components.m}
+    \item \texttt{tests/test\_objective\_function\_sanity.m}
+\end{itemize}
+\end{physicsbox}
+
+\subsubsection{What Step 1 is checking}
+\begin{symtable}
+\texttt{test\_uniform\_state\_preservation.m} & quiet-state preservation & Checks whether a spatially uniform state remains unchanged when the setup should preserve it. This probes the flux/update path and quiet-limit boundary handling. \\
+\texttt{test\_boundary\_drive\_zero\_amplitude.m} & zero-drive enforcement & Checks whether setting the drive amplitude to zero really removes the intended forcing. \\
+\texttt{test\_drive\_interface\_outputs.m} & drive abstraction wiring & Checks whether the drive-model evaluation returns valid boundary-condition data structures. \\
+\texttt{test\_positive\_pressure\_density.m} & positivity floors & Checks whether negative density or pressure are avoided after updates. \\
+\texttt{test\_symmetric\_drive\_symmetry\_preservation.m} & symmetry under symmetric forcing & Checks whether a symmetric boundary drive remains acceptably symmetric. \\
+\texttt{test\_energy\_component\_bookkeeping.m} & energy partition bookkeeping & Checks whether kinetic, internal, magnetic, and total energy are computed consistently from the state. \\
+\texttt{test\_zero\_drive\_energy\_stability.m} & quiet-run energy behavior & Checks whether a no-drive case avoids obvious unphysical energy drift. \\
+\texttt{test\_divB\_monitoring.m} & divergence diagnostics & Checks whether the $\nabla\!\cdot\!\mathbf{B}$ diagnostic path returns sensible values. \\
+\texttt{test\_glm\_zero\_state\_preservation.m} & GLM quiet-state behavior & Checks whether the GLM scalar field $\psi$ remains non-pathological in a quiet limit. \\
+\texttt{test\_reconstruct\_plm\_monotonicity.m} & reconstruction limiter behavior & Checks that the piecewise-linear reconstruction does not create new extrema in the tested profile. \\
+\texttt{test\_core\_region\_definition.m} & diagnostic geometry & Checks whether the core region used by objective and uniformity routines is built as intended. \\
+\texttt{test\_objective\_function\_components.m} & objective bookkeeping & Checks whether compression rewards and penalty terms are assembled consistently. \\
+\texttt{test\_objective\_function\_sanity.m} & scalar-objective sanity & Checks whether the final objective responds sensibly to representative inputs. \\
+\end{symtable}
+
+\subsubsection{What to do if a Step 1 test fails}
+Do not continue to larger studies yet. Record:
+\begin{itemize}[leftmargin=1.8em]
+    \item the exact MATLAB error message,
+    \item which test file failed,
+    \item whether the failure is a hard crash, a failed assertion, or a clearly unphysical value.
+\end{itemize}
+Then fix that subsystem first.
+
+\subsection{Step 2: run one end-to-end baseline case}
+Run:
+\begin{center}
+\texttt{main\_baseline\_symmetric\_compression.m}
+\end{center}
+
+\subsubsection{What Step 2 is checking}
+This is the first full-path execution check. It tests whether the repository can go from case definition to solver to diagnostics to plots without crashing.
+
+\subsubsection{Source files mainly exercised in Step 2}
+\begin{itemize}[leftmargin=1.8em]
+    \item \texttt{cases/case\_baseline\_symmetric.m}
+    \item \texttt{src/config/build\_case\_config.m}
+    \item \texttt{src/config/run\_case.m}
+    \item \texttt{src/solver/advance\_mhd\_rk2.m}
+    \item \texttt{src/boundary/fill\_boundary\_from\_drive\_model.m}
+    \item \texttt{src/drive\_models/build\_drive\_model.m}
+    \item \texttt{src/drive\_models/evaluate\_drive.m}
+    \item \texttt{src/drive\_models/drive\_prescribed\_inward\_velocity.m}
+    \item \texttt{src/diagnostics/compute\_all\_diagnostics.m}
+    \item \texttt{src/plotting/plot\_state\_2d.m}
+    \item \texttt{src/plotting/plot\_compression\_metrics.m}
+\end{itemize}
+
+\subsubsection{What to inspect after Step 2}
+Inspect the generated figures and summaries for the following:
+\begin{itemize}[leftmargin=1.8em]
+    \item density field,
+    \item pressure field,
+    \item magnetic-field magnitude or magnetic-compression history,
+    \item objective history,
+    \item $\nabla\!\cdot\!\mathbf{B}$ histories,
+    \item obvious visual symmetry loss.
+\end{itemize}
+If the run completes but the fields look obviously wrong, treat that as a failure worth debugging before larger studies.
+
+\subsection{Step 3: run the standard verification package}
+Run:
+\begin{center}
+\texttt{main\_verification\_suite.m}
+\end{center}
+
+\subsubsection{What Step 3 is checking}
+This script is the main stage-7 verification driver. It is intended to gather the preservation, bookkeeping, and symmetry diagnostics in one place.
+
+\subsubsection{Source files mainly exercised in Step 3}
+\begin{itemize}[leftmargin=1.8em]
+    \item \texttt{src/solver/advance\_mhd\_rk2.m}
+    \item \texttt{src/diagnostics/compute\_energy\_components.m}
+    \item \texttt{src/diagnostics/compute\_symmetry\_metrics.m}
+    \item \texttt{src/analysis/export\_verification\_summary\_table.m}
+    \item \texttt{src/plotting/plot\_energy\_history.m}
+    \item \texttt{src/plotting/plot\_symmetry\_history.m}
+\end{itemize}
+
+\subsubsection{What to inspect after Step 3}
+Focus on:
+\begin{itemize}[leftmargin=1.8em]
+    \item mass drift,
+    \item total-energy drift,
+    \item left-right symmetry history,
+    \item top-bottom symmetry history,
+    \item momentum histories,
+    \item whether quiet or weakly driven runs remain qualitatively well behaved.
+\end{itemize}
+
+\subsection{Step 4: run the grid-convergence study}
+Run:
+\begin{center}
+\texttt{main\_grid\_convergence\_study.m}
+\end{center}
+
+\subsubsection{What Step 4 is checking}
+This step checks whether key outputs become more stable as the mesh is refined. The current stage uses scalar summary quantities rather than full-field norm comparisons, which is acceptable as a first research-code verification layer.
+
+\subsubsection{Source files mainly exercised in Step 4}
+\begin{itemize}[leftmargin=1.8em]
+    \item \texttt{src/analysis/run\_grid\_convergence\_study.m}
+    \item \texttt{src/analysis/compute\_convergence\_rates.m}
+    \item \texttt{src/analysis/export\_verification\_summary\_table.m}
+    \item \texttt{src/plotting/plot\_convergence\_summary.m}
+\end{itemize}
+
+\subsubsection{What to inspect after Step 4}
+Look at whether the following appear to stabilize with resolution:
+\begin{itemize}[leftmargin=1.8em]
+    \item peak objective value,
+    \item peak density-compression ratio,
+    \item magnetic-compression ratio,
+    \item density-uniformity metric,
+    \item mass drift,
+    \item total-energy drift,
+    \item root-mean-square $\nabla\!\cdot\!\mathbf{B}$ diagnostic.
+\end{itemize}
+If refinement makes the solution less stable or much less symmetric, that is important evidence, not a detail to ignore.
+
+\subsection{Step 5: only after the above, run the broader study scripts}
+After Steps 1--4 look acceptable, then run:
+\begin{itemize}[leftmargin=1.8em]
+    \item \texttt{main\_baseline\_study\_suite.m}
+    \item \texttt{main\_drive\_parameter\_sweep.m}
+    \item \texttt{main\_compare\_drive\_models.m}
+\end{itemize}
+These are not the first scripts to use for verification. They are for broader scientific comparison after the quieter checks pass.
+
+\section{Condensed checklist}
+\begin{physicsbox}
+\textbf{Minimal practical order}
+\begin{enumerate}[leftmargin=1.8em]
+    \item Run the key files in \texttt{tests/}.
+    \item Run \texttt{main\_baseline\_symmetric\_compression.m}.
+    \item Run \texttt{main\_verification\_suite.m}.
+    \item Run \texttt{main\_grid\_convergence\_study.m}.
+    \item Only then run the broader study scripts.
+\end{enumerate}
+\end{physicsbox}
+
+\section{How to interpret problems you may see}
+\begin{symtable}
+Test fails immediately & structural bug & Likely interface, indexing, missing field, or assertion problem. Fix before interpreting physics. \\
+Single baseline run crashes & workflow bug & Likely in case setup, run orchestration, solver update, or plotting/export path. \\
+Single baseline run finishes but looks strongly asymmetric & possible boundary or corner issue & Likely boundary ghost-cell treatment, directional bias, or corner handling issue. \\
+Large total-energy drift in quiet runs & numerical inconsistency & Check flux update, state floors, bookkeeping, and boundary conditions. \\
+Divergence history grows rapidly & magnetic-control problem & Check GLM handling, magnetic boundary treatment, and time-step restrictions. \\
+Curated suite ranks bizarrely & objective or solver issue & Do not trust the ranking until the quieter verification steps look acceptable. \\
+\end{symtable}
+
+\section{What files this guide is primarily about}
+The present step-by-step workflow is built around the following top-level MATLAB files:
+\begin{itemize}[leftmargin=1.8em]
+    \item \texttt{main\_baseline\_symmetric\_compression.m}
+    \item \texttt{main\_verification\_suite.m}
+    \item \texttt{main\_grid\_convergence\_study.m}
+    \item \texttt{main\_baseline\_study\_suite.m}
+    \item \texttt{main\_drive\_parameter\_sweep.m}
+    \item \texttt{main\_compare\_drive\_models.m}
+\end{itemize}
+The narrower subsystem checks are in the \texttt{tests/} folder.
+
+\section{Recommended next step after running this guide}
+Once this step-by-step verification pass has been executed, the next coding task should be driven by what actually happened in MATLAB. If the main issue is asymmetry near the edges or corners, then boundary-condition refinement is next. If the main issue is energy drift or magnetic divergence, then the solver numerics need attention first. If the verification outputs look acceptable, then the next science study should be spatial drive shaping.
+
+\end{document}

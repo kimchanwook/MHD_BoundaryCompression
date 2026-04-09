@@ -387,3 +387,51 @@ The first coding milestone should be:
 > Build the repository skeleton, define the baseline case file, define the `driveModel` interface, and implement the minimum grid/state/config infrastructure needed for the first forward solver pass.
 
 That keeps the project grounded in the forward physics model and preserves the same staged, modular development style as your earlier MHD work.
+
+
+## Current implementation status
+
+The repository now includes the first real forward-model layer:
+
+- conservative 2D ideal MHD state
+- first-order finite-volume update
+- HLL flux in both coordinate directions
+- TVD RK2 time stepping
+- boundary-drive interface with prescribed inward velocity model
+- baseline compression diagnostics
+
+The next numerical upgrade should be MUSCL/PLM reconstruction and explicit divergence cleaning.
+
+
+## Current solver status
+
+The current forward solver includes:
+- 2D ideal MHD conservative state evolution
+- HLL fluxes in x and y
+- RK2 time stepping
+- MUSCL/PLM reconstruction with an MC limiter
+- lightweight diffusive magnetic divergence cleaning
+
+The divergence treatment is an intermediate step. It reduces accumulated divergence error, but it is not yet constrained transport.
+
+
+## Stage 4 additions
+
+This stage adds baseline study orchestration, repeatable parameter sweeps, ranked objective-function exports, and comparison plots. The solver is still a research-grade forward model, but the workflow is now strong enough to produce organized compression-study outputs rather than only code-infrastructure outputs.
+
+## Current milestone
+
+The project now includes a **curated baseline study suite** that compares a small set of named drive configurations:
+
+- weak symmetric pulse
+- moderate symmetric pulse
+- strong symmetric pulse
+- shorter symmetric pulse
+- longer symmetric pulse
+- asymmetric timing perturbation
+
+Run this suite from:
+
+- `main_baseline_study_suite.m`
+
+This is the recommended starting point for the first scientifically interpretable comparison study.

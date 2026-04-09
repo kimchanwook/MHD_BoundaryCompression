@@ -1,0 +1,117 @@
+\documentclass[11pt]{article}
+\input{shared/project_style.tex}
+\lhead{MHD\_BoundaryCompression}
+\rhead{Project Plan}
+\begin{document}
+\DocTitle{Project Plan: MHD\_BoundaryCompression}{Boundary-driven compression in two-dimensional ideal magnetohydrodynamics}{Purpose: define the scientific goal, project structure, staged development logic, and the physical meaning of the boundary-compression study before the detailed implementation notes are read.}
+\begin{overviewbox}
+\textbf{Document purpose.} Purpose: define the scientific goal, project structure, staged development logic, and the physical meaning of the boundary-compression study before the detailed implementation notes are read.
+\end{overviewbox}
+\section{Symbol and acronym table}
+\begin{symtable}
+MHD & magnetohydrodynamics & Continuum model of a conducting fluid or plasma coupled to the magnetic field. \\
+$\Omega$ & computational domain & Two-dimensional rectangular domain in which the compression problem is solved. \\
+$L_x, L_y$ & domain lengths & Physical widths of the domain in the $x$ and $y$ directions. \\
+$ho$ & mass density & Plasma mass per unit volume. \\
+$\mathbf{v}$ & fluid velocity & Bulk plasma flow velocity. \\
+$p$ & thermal pressure & Gas pressure of the plasma. \\
+$\mathbf{B}$ & magnetic field & Magnetic-field vector evolved by the solver. \\
+$E$ & total energy density & Internal, kinetic, magnetic, and later GLM cleaning energy where relevant. \\
+GLM & generalized Lagrange multiplier & Auxiliary divergence-cleaning strategy that transports and damps magnetic divergence error. \\
+PINN & physics-informed neural network & Future extension path, not the starting point of this repository. \\
+\end{symtable}
+
+\section{Plain-language statement of the project}
+The central scientific question of \texttt{MHD\_BoundaryCompression} is the following:
+\begin{physicsbox}
+\emph{If a two-dimensional magnetized plasma is driven inward from its boundaries, which external drive configuration produces the most spatially uniform compression of both the plasma fluid and the magnetic field?}
+\end{physicsbox}
+The project begins with the simplest boundary-drive model that is still physically meaningful on a fixed Eulerian grid: a prescribed inward boundary velocity. The architecture is intentionally broader than that first choice. The repository is therefore designed so that the forward solver can later be reused with pressure loading, moving-wall boundaries, pulse trains, asymmetric timing, or spatially varying drive patterns without major restructuring.
+
+\section{Why this project is separate from \texttt{MHD\_PINN\_proj1}}
+This repository inherits the \emph{style}, \emph{documentation philosophy}, and \emph{workflow discipline} of \texttt{MHD\_PINN\_proj1}, but it is not an extension of that code base. The scientific target is different. The earlier project was organized around solver construction, wave verification, and a later bridge to physics-informed neural networks. This project is organized around compression physics, boundary forcing, and diagnostic measures of compression quality.
+
+That separation matters because the project should answer a different class of scientific questions. Instead of asking whether a solver reproduces a wave speed or a nonlinear pulse evolution, this repository asks how the shape of the external forcing controls the resulting compressed state.
+
+\section{Physics problem definition}
+\subsection{Domain and frame}
+The baseline domain is a fixed rectangle
+\[
+\Omega = [0,L_x]\times[0,L_y].
+\]
+The grid is Eulerian, meaning the grid itself does not move. Compression is represented through the evolving fluid state and magnetic field inside the domain, not by moving the mesh points.
+
+\subsection{Plasma model}
+The plasma is described by the conservative form of ideal MHD. The primary evolved quantities are mass density, momentum density, total energy density, and magnetic field. An ideal-gas equation of state closes the system. In normalized units, the baseline pressure relation is written as
+\[
+p = (\gamma-1)\left(E - \frac{1}{2}\rho |\mathbf{v}|^2 - \frac{1}{2}|\mathbf{B}|^2\right),
+\]
+with $\gamma$ the ratio of specific heats.
+
+\subsection{Physical target}
+The project is not merely trying to maximize peak density. A useful compressed state should combine several features at once:
+\begin{enumerate}[leftmargin=1.8em]
+    \item strong fluid compression, especially in density and pressure,
+    \item strong magnetic-field amplification,
+    \item small spatial variation across the compressed core,
+    \item good geometric symmetry when the drive is intended to be symmetric,
+    \item low residual core flow near stagnation,
+    \item acceptable control of magnetic divergence error.
+\end{enumerate}
+That is why the repository needs objective functions rather than a single scalar such as final peak density.
+
+\section{Design philosophy}
+\subsection{Forward physics first}
+The forward MHD model comes first. That choice is deliberate. A compression project becomes scientifically weak if it jumps directly to optimization or surrogate modeling before the governing dynamics and diagnostics have been made explicit.
+
+\subsection{Modularity by physical role}
+The code is separated into cases, reusable source functions, documentation, and tests. Inside the source tree, the key separation is between:
+\begin{itemize}[leftmargin=1.8em]
+    \item the core solver,
+    \item the physical drive model,
+    \item the numerical boundary-condition implementation,
+    \item the diagnostics and objective logic,
+    \item the postprocessing and plotting pipeline.
+\end{itemize}
+This is more than a style choice. It ensures that future drive models can be introduced without rewriting the time integrator or the diagnostics layer.
+
+\section{Module roadmap}
+\subsection{Module 0: project overview and workflow}
+Defines the scientific narrative, run order, file map, and organizational logic.
+
+\subsection{Module 1: governing equations and assumptions}
+Documents the ideal-MHD equations, the fixed-grid compression picture, and the role of magnetic pressure, magnetic tension, and frozen-in flux during compression.
+
+\subsection{Module 2: core two-dimensional ideal-MHD solver}
+Implements the conservative forward solver, including finite-volume updates, time stepping, wave-speed estimates, reconstruction, fluxes, and divergence control.
+
+\subsection{Module 3: boundary-drive abstraction layer}
+Defines the interface between the solver and the external drive. This is the layer that permits future drive families to be swapped in.
+
+\subsection{Module 4: numerical boundary implementation}
+Converts the physical drive prescription into ghost-cell values or equivalent numerical boundary states.
+
+\subsection{Module 5: compression diagnostics and objective functions}
+Defines how compression quality is measured, including compression ratios, uniformity metrics, symmetry measures, stagnation measures, and divergence penalties.
+
+\subsection{Module 6: baseline symmetric case}
+Provides the first clean reference problem: a square domain, initially uniform plasma, uniform magnetic field, and a symmetric four-sided inward velocity pulse.
+
+\subsection{Module 7 and beyond: curated studies and future extensions}
+Builds named comparison suites, parameter sweeps, and later alternative drive families such as pulse trains or spatial tapering.
+
+\section{How the repository should be read}
+A new reader should ideally proceed in this order:
+\begin{enumerate}[leftmargin=1.8em]
+    \item read this project plan first,
+    \item read the code and file roadmap,
+    \item read the physics-notes outline,
+    \item read the stage-specific implementation notes,
+    \item run the baseline symmetric case and tests,
+    \item move to curated study suites and parameter studies only after the baseline logic is understood.
+\end{enumerate}
+
+\section{Concluding summary}
+This repository is meant to behave like a small research code rather than a loose collection of scripts. The scientific story begins with boundary-driven ideal-MHD compression on a fixed Eulerian grid, builds the forward solver first, introduces a clean drive abstraction, and then measures which drives create the most uniform compressed states. That order makes the project much easier to defend scientifically and much easier to extend later.
+
+\end{document}
