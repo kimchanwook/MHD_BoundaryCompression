@@ -18,6 +18,8 @@ Examples of future drive types include:
 
 This project follows the same general style and documentation philosophy as `MHD_PINN_proj1`, but it is a **new standalone repository**, not an extension of that codebase.
 
+`This work was conducted with the assistance of a large language model (LLM), specifically ChatGPT`.
+
 ---
 
 ## Scientific goal
